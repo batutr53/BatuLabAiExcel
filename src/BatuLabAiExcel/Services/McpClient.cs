@@ -220,11 +220,35 @@ public class McpClient : IMcpClient
     {
         try
         {
-            // Try primary method first, then fallback
-            var scripts = new[] { _settings.ServerScript, _settings.ServerScriptFallback };
+            // Check for configuration file first
+            string? configuredCommand = null;
+            if (_settings.UseConfigFile)
+            {
+                configuredCommand = await TryLoadFromConfigFile();
+            }
+
+            // Build list of scripts to try
+            var scripts = new List<string>();
+            
+            if (!string.IsNullOrEmpty(configuredCommand))
+            {
+                scripts.Add(configuredCommand);
+                _logger.LogInformation("Found configured MCP command: {Command}", configuredCommand);
+            }
+            
+            // Add default scripts
+            if (!string.IsNullOrEmpty(_settings.ServerScript))
+                scripts.Add(_settings.ServerScript);
+            
+            if (!string.IsNullOrEmpty(_settings.ServerScriptFallback))
+                scripts.Add(_settings.ServerScriptFallback);
+                
+            if (!string.IsNullOrEmpty(_settings.ServerScriptInstallFirst))
+                scripts.Add(_settings.ServerScriptInstallFirst);
+
             Exception? lastException = null;
 
-            foreach (var script in scripts.Where(s => !string.IsNullOrEmpty(s)))
+            foreach (var script in scripts)
             {
                 try
                 {
@@ -251,7 +275,8 @@ public class McpClient : IMcpClient
                 var installResult = await TryAutoInstall(cancellationToken);
                 if (installResult.IsSuccess)
                 {
-                    return await TryStartWithScript("python -m excel_mcp_server stdio", cancellationToken);
+                    var pythonExe = await FindPythonExecutableAsync();
+                    return await TryStartWithScript($"{pythonExe} -m excel_mcp_server stdio", cancellationToken);
                 }
             }
 
@@ -261,6 +286,45 @@ public class McpClient : IMcpClient
         {
             _logger.LogError(ex, "Error starting MCP server process");
             return Result.Failure($"Failed to start MCP server: {ex.Message}");
+        }
+    }
+    
+    /// <summary>
+    /// Try to load MCP server command from configuration file
+    /// </summary>
+    private async Task<string?> TryLoadFromConfigFile()
+    {
+        try
+        {
+            var configPath = Path.Combine(_settings.WorkingDirectory, "mcp_config.json");
+            if (!File.Exists(configPath))
+            {
+                _logger.LogDebug("No MCP configuration file found at: {Path}", configPath);
+                return null;
+            }
+
+            var configJson = await File.ReadAllTextAsync(configPath);
+            using var doc = JsonDocument.Parse(configJson);
+            
+            if (doc.RootElement.TryGetProperty("mcp_server", out var mcpServer))
+            {
+                if (mcpServer.TryGetProperty("command", out var command) &&
+                    mcpServer.TryGetProperty("args", out var args))
+                {
+                    var commandStr = command.GetString();
+                    var argsList = args.EnumerateArray().Select(x => x.GetString()).Where(x => x != null);
+                    
+                    return $"{commandStr} {string.Join(" ", argsList)}";
+                }
+            }
+            
+            _logger.LogDebug("MCP configuration file found but no valid command found");
+            return null;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Error reading MCP configuration file");
+            return null;
         }
     }
 
@@ -273,6 +337,16 @@ public class McpClient : IMcpClient
         }
 
         ProcessStartInfo startInfo;
+
+        // Try to find the best Python executable
+        string pythonExe = await FindPythonExecutableAsync();
+        
+        // Replace 'python' with the found executable in the script
+        if (script.StartsWith("python "))
+        {
+            script = script.Replace("python ", $"{pythonExe} ");
+            serverCommand = script.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        }
 
         // Handle compound commands (with &&)
         if (script.Contains("&&"))
@@ -350,11 +424,13 @@ public class McpClient : IMcpClient
         {
             _logger.LogInformation("Installing excel-mcp-server via pip");
             
+            string pythonExe = await FindPythonExecutableAsync();
+            
             var installProcess = new Process
             {
                 StartInfo = new ProcessStartInfo
                 {
-                    FileName = _settings.PythonPath,
+                    FileName = pythonExe,
                     Arguments = "-m pip install excel-mcp-server",
                     UseShellExecute = false,
                     RedirectStandardOutput = true,
@@ -383,6 +459,76 @@ public class McpClient : IMcpClient
             _logger.LogError(ex, "Error during auto-installation");
             return Result.Failure($"Auto-installation error: {ex.Message}");
         }
+    }
+
+    /// <summary>
+    /// Find the best available Python executable
+    /// </summary>
+    private async Task<string> FindPythonExecutableAsync()
+    {
+        var candidates = new[]
+        {
+            _settings.PythonPath, // User configured path
+            "python",            // Default
+            "python3",           // Linux/Mac style
+            "py",                // Windows Python Launcher
+            @"C:\Python312\python.exe",
+            @"C:\Python311\python.exe", 
+            @"C:\Python310\python.exe",
+            @"C:\Program Files\Python312\python.exe",
+            @"C:\Program Files\Python311\python.exe",
+            @"C:\Program Files\Python310\python.exe",
+            @"C:\Program Files (x86)\Python312\python.exe",
+            @"C:\Program Files (x86)\Python311\python.exe",
+            @"C:\Program Files (x86)\Python310\python.exe",
+            @"C:\Users\" + Environment.UserName + @"\AppData\Local\Programs\Python\Python312\python.exe",
+            @"C:\Users\" + Environment.UserName + @"\AppData\Local\Programs\Python\Python311\python.exe",
+            @"C:\Users\" + Environment.UserName + @"\AppData\Local\Programs\Python\Python310\python.exe"
+        };
+
+        foreach (var candidate in candidates.Where(c => !string.IsNullOrEmpty(c)))
+        {
+            try
+            {
+                // First check if it's a direct file path
+                if (File.Exists(candidate))
+                {
+                    _logger.LogDebug("Found Python executable at: {Path}", candidate);
+                    return candidate;
+                }
+
+                // Then try to execute it to see if it's in PATH
+                var testProcess = new Process
+                {
+                    StartInfo = new ProcessStartInfo
+                    {
+                        FileName = candidate,
+                        Arguments = "--version",
+                        UseShellExecute = false,
+                        RedirectStandardOutput = true,
+                        RedirectStandardError = true,
+                        CreateNoWindow = true
+                    }
+                };
+
+                testProcess.Start();
+                await testProcess.WaitForExitAsync();
+
+                if (testProcess.ExitCode == 0)
+                {
+                    var version = await testProcess.StandardOutput.ReadToEndAsync();
+                    _logger.LogInformation("Found Python: {Version} at {Path}", version.Trim(), candidate);
+                    return candidate;
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogTrace(ex, "Python candidate {Candidate} not available", candidate);
+            }
+        }
+
+        _logger.LogWarning("No Python executable found, falling back to 'python'");
+        return "python"; // Fallback
     }
 
     private async Task<Result> PerformHandshakeAsync(CancellationToken cancellationToken)

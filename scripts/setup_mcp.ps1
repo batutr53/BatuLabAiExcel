@@ -1,13 +1,27 @@
 # Office Ai - Batu Lab. - MCP Setup Script
 # This script sets up the excel-mcp-server dependency
+# For comprehensive setup including Python installation, use setup_python_and_mcp.ps1
 
 param(
     [string]$InstallPath = ".\excel_files",
     [switch]$Force = $false,
-    [switch]$Verbose = $false
+    [switch]$Verbose = $false,
+    [switch]$UseComprehensiveSetup = $false
 )
 
 $ErrorActionPreference = "Stop"
+
+# Check if comprehensive setup should be used
+if ($UseComprehensiveSetup) {
+    Write-Host "Redirecting to comprehensive Python and MCP setup..." -ForegroundColor Cyan
+    $scriptPath = Join-Path $PSScriptRoot "setup_python_and_mcp.ps1"
+    $args = @("-WorkingDirectory", $InstallPath)
+    if ($Force) { $args += "-ForceReinstall" }
+    if ($Verbose) { $args += "-Verbose" }
+    
+    & $scriptPath @args
+    exit $LASTEXITCODE
+}
 
 # Colors for output
 $Green = "`e[32m"

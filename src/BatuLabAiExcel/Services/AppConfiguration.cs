@@ -35,13 +35,15 @@ public class AppConfiguration
     public class McpSettings
     {
         public string PythonPath { get; set; } = "python";
-        public string ServerScript { get; set; } = "python -m pip install excel-mcp-server && python -m excel_mcp_server stdio";
+        public string ServerScript { get; set; } = "python -m excel_mcp_server stdio";
         public string ServerScriptFallback { get; set; } = "uvx excel-mcp-server stdio";
+        public string ServerScriptInstallFirst { get; set; } = "python -m pip install excel-mcp-server && python -m excel_mcp_server stdio";
         public string WorkingDirectory { get; set; } = "./excel_files";
         public int TimeoutSeconds { get; set; } = 30;
         public bool RestartOnFailure { get; set; } = true;
         public int MaxRestartAttempts { get; set; } = 3;
         public bool AutoInstall { get; set; } = true;
+        public bool UseConfigFile { get; set; } = true;
     }
 
     public class LoggingSettings
