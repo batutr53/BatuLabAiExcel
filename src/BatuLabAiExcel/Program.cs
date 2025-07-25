@@ -1,0 +1,63 @@
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
+using Serilog;
+using System.Windows;
+using System.Net.Http;
+using BatuLabAiExcel.Services;
+using BatuLabAiExcel.ViewModels;
+using BatuLabAiExcel.Infrastructure;
+
+namespace BatuLabAiExcel;
+
+/// <summary>
+/// Application entry point with Generic Host configuration
+/// </summary>
+public static class Program
+{
+    public static IHostBuilder CreateHostBuilder(string[] args) =>
+        Host.CreateDefaultBuilder(args)
+            .ConfigureAppConfiguration((context, config) =>
+            {
+                config.AddJsonFile("appsettings.json", optional: false)
+                      .AddJsonFile($"appsettings.{context.HostingEnvironment.EnvironmentName}.json", optional: true)
+                      .AddEnvironmentVariables()
+                      .AddCommandLine(args);
+            })
+            .UseSerilog((context, configuration) =>
+            {
+                var logConfig = context.Configuration.GetSection("Logging");
+                var filePath = logConfig["File:Path"];
+                
+                configuration
+                    .WriteTo.Console()
+                    .WriteTo.File(
+                        filePath ?? "logs/office-ai-batu-lab-.log",
+                        rollingInterval: RollingInterval.Day,
+                        retainedFileCountLimit: 7,
+                        fileSizeLimitBytes: 10 * 1024 * 1024);
+            })
+            .ConfigureServices((context, services) =>
+            {
+                // Configuration
+                services.Configure<AppConfiguration>(context.Configuration);
+                services.Configure<AppConfiguration.ClaudeSettings>(context.Configuration.GetSection("Claude"));
+                services.Configure<AppConfiguration.McpSettings>(context.Configuration.GetSection("Mcp"));
+
+                // HTTP Client
+                services.AddHttpClient<IClaudeService, ClaudeService>();
+
+                // Services
+                services.AddSingleton<IChatOrchestrator, ChatOrchestrator>();
+                services.AddSingleton<IClaudeService, ClaudeService>();
+                services.AddSingleton<IMcpClient, McpClient>();
+                
+                // ViewModels
+                services.AddTransient<MainViewModel>();
+                
+                // Infrastructure
+                services.AddSingleton<ProcessHelper>();
+            });
+
+}
