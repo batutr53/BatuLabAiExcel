@@ -239,7 +239,7 @@ public class ClaudeCliService : IAiService
             // Use PowerShell for better command handling on Windows
             var finalCommand = "powershell.exe";
             var claudeArgs = $"--print --output-format json --mcp-config '{mcpConfigPath}' --dangerously-skip-permissions '{escapedMessage}'";
-            var finalArgs = $"-Command \"& '{executablePath}' {claudeArgs}\"";
+            var finalArgs = $"-Command \"[Console]::OutputEncoding = [System.Text.Encoding]::UTF8; & '{executablePath}' {claudeArgs}\"";
             
             _logger.LogInformation("Executing Claude CLI via PowerShell: {Command} {Args}", finalCommand, finalArgs);
             _logger.LogInformation("Claude executable: {Executable}", executablePath);
@@ -265,12 +265,16 @@ public class ClaudeCliService : IAiService
     {
         try
         {
-            // Try to parse as JSON first (if --json-output was used)
-            try
+            // Claude CLI --output-format json returns a JSON with "result" field
+            var jsonDocument = JsonDocument.Parse(output);
+            if (jsonDocument.RootElement.TryGetProperty("result", out var resultElement))
             {
-                var jsonResponse = JsonSerializer.Deserialize<ClaudeCliJsonResponse>(output);
-                if (jsonResponse?.Response != null)
+                var resultText = resultElement.GetString();
+                if (!string.IsNullOrEmpty(resultText))
                 {
+                    // Fix Turkish character encoding issues
+                    var cleanedText = FixTurkishCharacters(resultText);
+                    
                     return new AiResponse
                     {
                         Id = Guid.NewGuid().ToString(),
@@ -280,7 +284,7 @@ public class ClaudeCliService : IAiService
                             new AiResponseContent
                             {
                                 Type = "text",
-                                Text = jsonResponse.Response
+                                Text = cleanedText
                             }
                         },
                         Usage = null,
@@ -288,14 +292,9 @@ public class ClaudeCliService : IAiService
                     };
                 }
             }
-            catch
-            {
-                // Fall back to plain text parsing
-            }
 
-            // Parse as plain text
+            // If no result field, try to extract text from JSON structure
             var cleanedOutput = CleanClaudeCliOutput(output);
-            
             return new AiResponse
             {
                 Id = Guid.NewGuid().ToString(),
@@ -314,7 +313,10 @@ public class ClaudeCliService : IAiService
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "Error parsing Claude CLI response, returning raw output");
+            _logger.LogWarning(ex, "Error parsing Claude CLI JSON response, falling back to plain text");
+            
+            // Try to extract just the meaningful content if it's visible JSON
+            var cleanedOutput = ExtractMeaningfulContent(output);
             
             return new AiResponse
             {
@@ -325,7 +327,7 @@ public class ClaudeCliService : IAiService
                     new AiResponseContent
                     {
                         Type = "text",
-                        Text = output
+                        Text = cleanedOutput
                     }
                 },
                 Usage = null,
@@ -368,6 +370,80 @@ public class ClaudeCliService : IAiService
         return string.Join("\n", responseLines).Trim();
     }
 
+    private string FixTurkishCharacters(string input)
+    {
+        if (string.IsNullOrEmpty(input)) return input;
+
+        // Common Turkish character encoding fixes
+        var fixes = new Dictionary<string, string>
+        {
+            // Unicode escape sequences to proper Turkish characters
+            {"\\u0131", "ı"}, {"\\u0130", "İ"},
+            {"\\u015f", "ş"}, {"\\u015e", "Ş"},
+            {"\\u011f", "ğ"}, {"\\u011e", "Ğ"},
+            {"\\u00fc", "ü"}, {"\\u00dc", "Ü"},
+            {"\\u00f6", "ö"}, {"\\u00d6", "Ö"},
+            {"\\u00e7", "ç"}, {"\\u00c7", "Ç"},
+            
+            // HTML entities
+            {"&ccedil;", "ç"}, {"&Ccedil;", "Ç"},
+            {"&ouml;", "ö"}, {"&Ouml;", "Ö"},
+            {"&uuml;", "ü"}, {"&Uuml;", "Ü"},
+            {"&inodot;", "ı"}, {"&Idot;", "İ"},
+            {"&scaron;", "ş"}, {"&Scaron;", "Ş"},
+            {"&gbreve;", "ğ"}, {"&Gbreve;", "Ğ"},
+            
+            // Common misencoded characters
+            {"Ä±", "ı"}, {"Ä°", "İ"},
+            {"ÅŸ", "ş"}, {"Åž", "Ş"}, 
+            {"Ä£", "ğ"}, {"Ä¢", "Ğ"},
+            {"Ã¼", "ü"}, {"Ãœ", "Ü"},
+            {"Ã¶", "ö"}, {"Ã–", "Ö"},
+            {"Ã§", "ç"}, {"Ã‡", "Ç"}
+        };
+
+        var result = input;
+        foreach (var fix in fixes)
+        {
+            result = result.Replace(fix.Key, fix.Value);
+        }
+
+        return result;
+    }
+
+    private string ExtractMeaningfulContent(string jsonOutput)
+    {
+        try
+        {
+            // If it looks like JSON, try to extract the result field
+            if (jsonOutput.Trim().StartsWith("{"))
+            {
+                var startIndex = jsonOutput.IndexOf("\"result\":\"");
+                if (startIndex >= 0)
+                {
+                    startIndex += 10; // Length of "result":"
+                    var endIndex = jsonOutput.LastIndexOf("\",\"session_id\"");
+                    if (endIndex > startIndex)
+                    {
+                        var resultContent = jsonOutput.Substring(startIndex, endIndex - startIndex);
+                        // Remove escape characters and fix Turkish characters
+                        resultContent = resultContent.Replace("\\n", "\n")
+                                                   .Replace("\\\"", "\"")
+                                                   .Replace("\\\\", "\\");
+                        return FixTurkishCharacters(resultContent);
+                    }
+                }
+            }
+
+            // Fallback to basic cleaning
+            return CleanClaudeCliOutput(jsonOutput);
+        }
+        catch
+        {
+            return CleanClaudeCliOutput(jsonOutput);
+        }
+    }
+
     private async Task<Result<string>> ExecuteCommandAsync(
         string fileName, 
         string arguments, 
@@ -384,6 +460,8 @@ public class ClaudeCliService : IAiService
             process.StartInfo.RedirectStandardOutput = true;
             process.StartInfo.RedirectStandardError = true;
             process.StartInfo.CreateNoWindow = true;
+            process.StartInfo.StandardOutputEncoding = Encoding.UTF8;
+            process.StartInfo.StandardErrorEncoding = Encoding.UTF8;
 
             if (!string.IsNullOrEmpty(workingDirectory))
             {

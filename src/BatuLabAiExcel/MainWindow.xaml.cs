@@ -3,6 +3,8 @@ using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Globalization;
+using System.Windows.Data;
 using BatuLabAiExcel.ViewModels;
 using BatuLabAiExcel.Models;
 
@@ -189,5 +191,51 @@ public partial class MainWindow : Window
                 viewModel.ChangeAiProvider(provider);
             }
         }
+    }
+
+    // Window control methods for custom title bar
+    private void TitleBar_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+    {
+        if (e.LeftButton == MouseButtonState.Pressed)
+        {
+            DragMove();
+        }
+    }
+
+    private void MinimizeButton_Click(object sender, RoutedEventArgs e)
+    {
+        WindowState = WindowState.Minimized;
+    }
+
+    private void MaximizeButton_Click(object sender, RoutedEventArgs e)
+    {
+        WindowState = WindowState == WindowState.Maximized ? WindowState.Normal : WindowState.Maximized;
+    }
+
+    private void CloseButton_Click(object sender, RoutedEventArgs e)
+    {
+        Close();
+    }
+}
+
+/// <summary>
+/// Converter for message alignment based on user role
+/// </summary>
+public class MessageAlignmentConverter : IValueConverter
+{
+    public static readonly MessageAlignmentConverter Instance = new();
+
+    public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+    {
+        if (value is bool isUser)
+        {
+            return isUser ? HorizontalAlignment.Right : HorizontalAlignment.Left;
+        }
+        return HorizontalAlignment.Left;
+    }
+
+    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+    {
+        throw new NotImplementedException();
     }
 }

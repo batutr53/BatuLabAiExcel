@@ -4,13 +4,16 @@
         xmlns:local="clr-namespace:BatuLabAiExcel"
         Title="Office Ai - Batu Lab." 
         Height="600" 
-        Width="800" 
+        Width="900" 
         MinHeight="400" 
         MinWidth="600"
         WindowStartupLocation="CenterScreen"
         AllowDrop="True"
         Drop="Window_Drop"
-        DragOver="Window_DragOver">
+        DragOver="Window_DragOver"
+        WindowStyle="None"
+        AllowsTransparency="True"
+        Background="Transparent">
     
     <Window.Resources>
         <!-- Built-in converters -->
@@ -20,221 +23,676 @@
         <local:InverseBooleanConverter x:Key="InverseBoolConverter"/>
         <local:BoolToBackgroundConverter x:Key="BoolToBackgroundConverter"/>
         <local:BoolToForegroundConverter x:Key="BoolToForegroundConverter"/>
+        
+        <!-- Dark Night Theme Color Palette -->
+        <SolidColorBrush x:Key="PrimaryBrush" Color="#8B5CF6"/>
+        <SolidColorBrush x:Key="PrimaryHoverBrush" Color="#7C3AED"/>
+        <SolidColorBrush x:Key="SecondaryBrush" Color="#06D6A0"/>
+        <SolidColorBrush x:Key="SurfaceBrush" Color="#0F172A"/>
+        <SolidColorBrush x:Key="CardBrush" Color="#1E293B"/>
+        <SolidColorBrush x:Key="CardHoverBrush" Color="#334155"/>
+        <SolidColorBrush x:Key="TextPrimaryBrush" Color="#F1F5F9"/>
+        <SolidColorBrush x:Key="TextSecondaryBrush" Color="#94A3B8"/>
+        <SolidColorBrush x:Key="BorderBrush" Color="#475569"/>
+        <SolidColorBrush x:Key="DangerBrush" Color="#F87171"/>
+        <SolidColorBrush x:Key="WarningBrush" Color="#FCD34D"/>
+        <SolidColorBrush x:Key="ShadowBrush" Color="#000000"/>
+        <SolidColorBrush x:Key="BackgroundBrush" Color="#020617"/>
+        <SolidColorBrush x:Key="AccentBrush" Color="#3B82F6"/>
+        
+        <!-- Modern Button Style with Golden Ratio -->
+        <Style x:Key="ModernButtonStyle" TargetType="Button">
+            <Setter Property="Background" Value="{StaticResource PrimaryBrush}"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Height" Value="48"/>  <!-- Golden ratio base -->
+            <Setter Property="MinWidth" Value="78"/> <!-- 48 * 1.618 = 78 -->
+            <Setter Property="Padding" Value="24,12"/> <!-- 48/2 = 24 -->
+            <Setter Property="Margin" Value="4"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Effect">
+                <Setter.Value>
+                    <DropShadowEffect Color="{Binding Color, Source={StaticResource ShadowBrush}}" 
+                                    BlurRadius="12" 
+                                    ShadowDepth="3" 
+                                    Opacity="0.3"/>
+                </Setter.Value>
+            </Setter>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}"
+                                CornerRadius="8"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                BorderBrush="{TemplateBinding BorderBrush}">
+                            <ContentPresenter HorizontalAlignment="Center" 
+                                            VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Background" Value="{StaticResource PrimaryHoverBrush}"/>
+                                <Setter Property="Effect">
+                                    <Setter.Value>
+                                        <DropShadowEffect Color="{Binding Color, Source={StaticResource PrimaryBrush}}" 
+                                                        BlurRadius="16" 
+                                                        ShadowDepth="4" 
+                                                        Opacity="0.4"/>
+                                    </Setter.Value>
+                                </Setter>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter Property="Effect">
+                                    <Setter.Value>
+                                        <DropShadowEffect Color="{Binding Color, Source={StaticResource ShadowBrush}}" 
+                                                        BlurRadius="6" 
+                                                        ShadowDepth="1" 
+                                                        Opacity="0.5"/>
+                                    </Setter.Value>
+                                </Setter>
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter Property="Background" Value="{StaticResource BorderBrush}"/>
+                                <Setter Property="Foreground" Value="{StaticResource TextSecondaryBrush}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        
+        <!-- Secondary Button Style -->
+        <Style x:Key="SecondaryButtonStyle" TargetType="Button" BasedOn="{StaticResource ModernButtonStyle}">
+            <Setter Property="Background" Value="{StaticResource CardBrush}"/>
+            <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}"/>
+            <Setter Property="BorderThickness" Value="2"/>
+            <Setter Property="BorderBrush" Value="{StaticResource BorderBrush}"/>
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="{StaticResource CardHoverBrush}"/>
+                    <Setter Property="BorderBrush" Value="{StaticResource PrimaryBrush}"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+        
+        <!-- Danger Button Style -->
+        <Style x:Key="DangerButtonStyle" TargetType="Button" BasedOn="{StaticResource ModernButtonStyle}">
+            <Setter Property="Background" Value="{StaticResource DangerBrush}"/>
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="#EF4444"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+        
+        <!-- Modern TextBox Style -->
+        <Style x:Key="ModernTextBoxStyle" TargetType="TextBox">
+            <Setter Property="Background" Value="{StaticResource CardBrush}"/>
+            <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}"/>
+            <Setter Property="BorderThickness" Value="2"/>
+            <Setter Property="BorderBrush" Value="{StaticResource BorderBrush}"/>
+            <Setter Property="Padding" Value="16,12"/>
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="FontFamily" Value="Segoe UI"/>
+            <Setter Property="CaretBrush" Value="{StaticResource PrimaryBrush}"/>
+            <Setter Property="SelectionBrush" Value="{StaticResource PrimaryBrush}"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="TextBox">
+                        <Border Background="{TemplateBinding Background}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                CornerRadius="8">
+                            <ScrollViewer x:Name="PART_ContentHost" 
+                                        Margin="{TemplateBinding Padding}"
+                                        VerticalAlignment="Top"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsFocused" Value="True">
+                                <Setter Property="BorderBrush" Value="{StaticResource PrimaryBrush}"/>
+                                <Setter Property="Effect">
+                                    <Setter.Value>
+                                        <DropShadowEffect Color="{Binding Color, Source={StaticResource PrimaryBrush}}" 
+                                                        BlurRadius="12" 
+                                                        ShadowDepth="0" 
+                                                        Opacity="0.4"/>
+                                    </Setter.Value>
+                                </Setter>
+                            </Trigger>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="BorderBrush" Value="{StaticResource AccentBrush}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        
+        <!-- Modern ComboBox Style -->
+        <Style x:Key="ModernComboBoxStyle" TargetType="ComboBox">
+            <Setter Property="Background" Value="{StaticResource CardBrush}"/>
+            <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}"/>
+            <Setter Property="BorderThickness" Value="2"/>
+            <Setter Property="BorderBrush" Value="{StaticResource BorderBrush}"/>
+            <Setter Property="Padding" Value="12,8"/>
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="FontWeight" Value="Medium"/>
+            <Setter Property="Height" Value="40"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ComboBox">
+                        <Grid>
+                            <ToggleButton x:Name="ToggleButton" 
+                                        Background="{TemplateBinding Background}"
+                                        BorderBrush="{TemplateBinding BorderBrush}"
+                                        BorderThickness="{TemplateBinding BorderThickness}"
+                                        Grid.Column="2" 
+                                        Focusable="false"
+                                        IsChecked="{Binding Path=IsDropDownOpen,Mode=TwoWay,RelativeSource={RelativeSource TemplatedParent}}"
+                                        ClickMode="Press">
+                                <ToggleButton.Template>
+                                    <ControlTemplate TargetType="ToggleButton">
+                                        <Border Background="{TemplateBinding Background}"
+                                                BorderBrush="{TemplateBinding BorderBrush}"
+                                                BorderThickness="{TemplateBinding BorderThickness}"
+                                                CornerRadius="8">
+                                            <Grid>
+                                                <ContentPresenter Margin="12,8,30,8" 
+                                                                HorizontalAlignment="Left"
+                                                                VerticalAlignment="Center"/>
+                                                <Path Fill="{StaticResource TextSecondaryBrush}"
+                                                    HorizontalAlignment="Right"
+                                                    Margin="0,0,12,0"
+                                                    VerticalAlignment="Center"
+                                                    Data="M 0 0 L 4 4 L 8 0 Z"/>
+                                            </Grid>
+                                        </Border>
+                                    </ControlTemplate>
+                                </ToggleButton.Template>
+                            </ToggleButton>
+                            <ContentPresenter Name="ContentSite"
+                                            IsHitTestVisible="False" 
+                                            Content="{TemplateBinding SelectionBoxItem}"
+                                            ContentTemplate="{TemplateBinding SelectionBoxItemTemplate}"
+                                            ContentTemplateSelector="{TemplateBinding ItemTemplateSelector}"
+                                            Margin="12,8,30,8"
+                                            VerticalAlignment="Center"
+                                            HorizontalAlignment="Left" />
+                            <TextBox x:Name="PART_EditableTextBox"
+                                   Style="{x:Null}" 
+                                   Template="{DynamicResource ComboBoxTextBox}" 
+                                   HorizontalAlignment="Left" 
+                                   VerticalAlignment="Center" 
+                                   Margin="3,3,23,3"
+                                   Focusable="True" 
+                                   Background="Transparent"
+                                   Visibility="Hidden"
+                                   IsReadOnly="{TemplateBinding IsReadOnly}"/>
+                            <Popup Name="Popup"
+                                 Placement="Bottom"
+                                 IsOpen="{TemplateBinding IsDropDownOpen}"
+                                 AllowsTransparency="True" 
+                                 Focusable="False"
+                                 PopupAnimation="Slide">
+                                <Grid Name="DropDown"
+                                    SnapsToDevicePixels="True"                
+                                    MinWidth="{TemplateBinding ActualWidth}"
+                                    MaxHeight="{TemplateBinding MaxDropDownHeight}">
+                                    <Border x:Name="DropDownBorder"
+                                          Background="{StaticResource CardBrush}"
+                                          BorderThickness="2"
+                                          BorderBrush="{StaticResource BorderBrush}"
+                                          CornerRadius="8"
+                                          Margin="0,2,0,0">
+                                        <Border.Effect>
+                                            <DropShadowEffect Color="{Binding Color, Source={StaticResource ShadowBrush}}" 
+                                                            BlurRadius="10" 
+                                                            ShadowDepth="2" 
+                                                            Opacity="0.2"/>
+                                        </Border.Effect>
+                                    </Border>
+                                    <ScrollViewer Margin="4,6,4,6" SnapsToDevicePixels="True">
+                                        <StackPanel IsItemsHost="True" KeyboardNavigation.DirectionalNavigation="Contained" />
+                                    </ScrollViewer>
+                                </Grid>
+                            </Popup>
+                        </Grid>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="HasItems" Value="false">
+                                <Setter TargetName="DropDownBorder" Property="MinHeight" Value="95"/>
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="false">
+                                <Setter Property="Foreground" Value="{StaticResource TextSecondaryBrush}"/>
+                            </Trigger>
+                            <Trigger Property="IsGrouping" Value="true">
+                                <Setter Property="ScrollViewer.CanContentScroll" Value="false"/>
+                            </Trigger>
+                            <Trigger SourceName="Popup" Property="Popup.AllowsTransparency" Value="true">
+                                <Setter TargetName="DropDownBorder" Property="CornerRadius" Value="8"/>
+                                <Setter TargetName="DropDownBorder" Property="Margin" Value="0,2,0,0"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        
+        <!-- ComboBox TextBox Template -->
+        <ControlTemplate x:Key="ComboBoxTextBox" TargetType="TextBox">
+            <Border x:Name="PART_ContentHost" Focusable="False" Background="{TemplateBinding Background}" />
+        </ControlTemplate>
+        
+        <!-- Card Style -->
+        <Style x:Key="CardStyle" TargetType="Border">
+            <Setter Property="Background" Value="{StaticResource CardBrush}"/>
+            <Setter Property="CornerRadius" Value="8"/>
+            <Setter Property="Padding" Value="16"/>
+            <Setter Property="Effect">
+                <Setter.Value>
+                    <DropShadowEffect Color="{Binding Color, Source={StaticResource ShadowBrush}}" 
+                                    BlurRadius="12" 
+                                    ShadowDepth="2" 
+                                    Opacity="0.08"/>
+                </Setter.Value>
+            </Setter>
+        </Style>
     </Window.Resources>
     
     <Window.InputBindings>
         <KeyBinding Key="C" Modifiers="Ctrl+Shift" Command="{Binding CopyAllMessagesCommand}"/>
     </Window.InputBindings>
     
-    <Grid Margin="20">
-        <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="*"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-        </Grid.RowDefinitions>
-        
-        <!-- Header -->
-        <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,20">
-            <TextBlock Text="💻" FontSize="24" VerticalAlignment="Center" Margin="0,0,10,0"/>
-            <TextBlock Text="Office Ai - Batu Lab." 
-                       FontSize="24" 
-                       FontWeight="Bold" 
-                       Foreground="#0078D4" 
-                       VerticalAlignment="Center"/>
-            <TextBlock Text=" - Excel AI Assistant" 
-                       FontSize="16" 
-                       Foreground="#666666" 
-                       VerticalAlignment="Center" 
-                       Margin="5,0,0,0"/>
-        </StackPanel>
-        
-        <!-- Chat History -->
-        <Border Grid.Row="1" 
-                BorderBrush="#E1E1E1" 
-                BorderThickness="1" 
-                CornerRadius="8"
-                Background="White">
-            <ScrollViewer x:Name="ChatScrollViewer" 
-                          Padding="15">
-                <ItemsControl ItemsSource="{Binding Messages}">
-                    <ItemsControl.ItemTemplate>
-                        <DataTemplate>
-                            <Border Margin="0,0,0,15" 
-                                    Padding="12,8" 
-                                    CornerRadius="8"
-                                    Background="{Binding IsUser, Converter={StaticResource BoolToBackgroundConverter}}"
-                                    MouseRightButtonUp="MessageBorder_RightClick"
-                                    Tag="{Binding}">
-                                <StackPanel>
-                                    <TextBlock Text="{Binding Role}" 
-                                               FontWeight="SemiBold" 
-                                               FontSize="12" 
-                                               Foreground="{Binding IsUser, Converter={StaticResource BoolToForegroundConverter}}"
-                                               Margin="0,0,0,4"/>
-                                    <TextBlock Text="{Binding Content}" 
-                                               TextWrapping="Wrap" 
-                                               FontSize="14"
-                                               Foreground="{Binding IsUser, Converter={StaticResource BoolToForegroundConverter}}"
-                                               x:Name="MessageContent"/>
-                                    <TextBlock Text="{Binding Timestamp, StringFormat='{}{0:HH:mm:ss}'}" 
-                                               FontSize="10" 
-                                               Foreground="#888888" 
-                                               HorizontalAlignment="Right" 
-                                               Margin="0,4,0,0"/>
-                                </StackPanel>
-                                <Border.ContextMenu>
-                                    <ContextMenu>
-                                        <MenuItem Header="📋 Copy Message" 
-                                                  Click="CopyMessage_Click"
-                                                  Tag="{Binding}"/>
-                                        <MenuItem Header="📄 Copy Content Only" 
-                                                  Click="CopyContent_Click"
-                                                  Tag="{Binding}"/>
-                                        <Separator/>
-                                        <MenuItem Header="🕐 Copy with Timestamp" 
-                                                  Click="CopyWithTimestamp_Click"
-                                                  Tag="{Binding}"/>
-                                    </ContextMenu>
-                                </Border.ContextMenu>
-                            </Border>
-                        </DataTemplate>
-                    </ItemsControl.ItemTemplate>
-                </ItemsControl>
-            </ScrollViewer>
-        </Border>
-        
-        <!-- Status -->
-        <StackPanel Grid.Row="2" 
-                    Orientation="Horizontal" 
-                    Margin="0,10,0,0"
-                    Visibility="{Binding IsBusy, Converter={StaticResource BooleanToVisibilityConverter}}">
-            <TextBlock Text="⏳" Margin="0,0,5,0"/>
-            <TextBlock Text="{Binding StatusMessage}" 
-                       FontStyle="Italic" 
-                       Foreground="#0078D4"/>
-        </StackPanel>
-        
-        <!-- File Selection Area -->
-        <Border Grid.Row="3" 
-                BorderBrush="#E1E1E1" 
-                BorderThickness="1" 
-                CornerRadius="4"
-                Background="#F9F9F9"
-                Margin="0,0,0,10"
-                Padding="10">
-            <StackPanel Orientation="Horizontal">
-                <TextBlock Text="📁" FontSize="16" Margin="0,0,8,0" VerticalAlignment="Center"/>
-                <TextBlock Text="Active Excel File:" FontWeight="SemiBold" Margin="0,0,8,0" VerticalAlignment="Center"/>
-                <TextBlock Text="{Binding CurrentFileName}" 
-                           FontStyle="Italic" 
-                           Foreground="#0078D4" 
-                           VerticalAlignment="Center"
-                           Margin="0,0,10,0"/>
-                <Button Content="Browse..." 
-                        Command="{Binding BrowseFileCommand}"
-                        Padding="8,4"
-                        MinWidth="80"/>
-                <Button Content="Open Folder" 
-                        Command="{Binding OpenFolderCommand}"
-                        Padding="8,4"
-                        MinWidth="80"
-                        Margin="5,0,0,0"/>
-            </StackPanel>
-        </Border>
-
-        <!-- AI Provider Selection -->
-        <Border Grid.Row="4" 
-                BorderBrush="#E1E1E1" 
-                BorderThickness="1" 
-                CornerRadius="4"
-                Background="#F5F5F5"
-                Margin="0,0,0,10"
-                Padding="10">
-            <StackPanel Orientation="Horizontal">
-                <TextBlock Text="🤖" FontSize="16" Margin="0,0,8,0" VerticalAlignment="Center"/>
-                <TextBlock Text="AI Provider:" FontWeight="SemiBold" Margin="0,0,8,0" VerticalAlignment="Center"/>
-                <ComboBox x:Name="AiProviderComboBox"
-                          MinWidth="150"
-                          SelectedValue="{Binding SelectedAiProvider}"
-                          SelectionChanged="AiProviderComboBox_SelectionChanged">
-                    <ComboBoxItem Content="Claude" Tag="Claude"/>
-                    <ComboBoxItem Content="Gemini" Tag="Gemini"/>
-                    <ComboBoxItem Content="Groq" Tag="Groq"/>
-                    <Separator/>
-                    <ComboBoxItem Content="Claude CLI" Tag="Claude CLI"/>
-                    <ComboBoxItem Content="Claude Desktop" Tag="Claude Desktop"/>
-                    <ComboBoxItem Content="ChatGPT Desktop" Tag="ChatGPT Desktop"/>
-                </ComboBox>
-                <TextBlock Text="{Binding CurrentAiProviderStatus}" 
-                           FontStyle="Italic" 
-                           Foreground="#0078D4" 
-                           VerticalAlignment="Center"
-                           Margin="10,0,0,0"/>
-            </StackPanel>
-        </Border>
-
-        <!-- Input Area -->
-        <Grid Grid.Row="5" Margin="0,15,0,0">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="Auto"/>
-                <ColumnDefinition Width="Auto"/>
-            </Grid.ColumnDefinitions>
+    <!-- Main Container with Dark Theme -->
+    <Border Style="{StaticResource CardStyle}" 
+            Margin="10"
+            Background="{StaticResource BackgroundBrush}">
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/> <!-- Custom Title Bar -->
+                <RowDefinition Height="Auto"/> <!-- Header -->
+                <RowDefinition Height="*"/>    <!-- Main Content -->
+                <RowDefinition Height="Auto"/> <!-- Input Area -->
+            </Grid.RowDefinitions>
             
-            <TextBox Grid.Column="0" 
-                     x:Name="InputTextBox"
-                     Text="{Binding InputText, UpdateSourceTrigger=PropertyChanged}" 
-                     MinHeight="40"
-                     MaxHeight="120"
-                     TextWrapping="Wrap"
-                     AcceptsReturn="True"
-                     VerticalScrollBarVisibility="Auto"
-                     VerticalContentAlignment="Top"
-                     Padding="12,8"
-                     Margin="0,0,10,0">
-                <TextBox.InputBindings>
-                    <KeyBinding Key="Enter" 
-                                Command="{Binding SendCommand}" 
-                                Modifiers="Control"/>
-                </TextBox.InputBindings>
-            </TextBox>
-            
-            <Button Grid.Column="1" 
-                    Content="Send" 
-                    Command="{Binding SendCommand}"
-                    IsEnabled="{Binding IsBusy, Converter={StaticResource InverseBoolConverter}}"
-                    VerticalAlignment="Bottom"
-                    Height="40"
-                    MinWidth="80"
-                    Margin="0,0,5,0"/>
+            <!-- Custom Title Bar -->
+            <Border Grid.Row="0" 
+                    CornerRadius="8,8,0,0"
+                    Height="48"
+                    MouseLeftButtonDown="TitleBar_MouseLeftButtonDown">
+                <Border.Background>
+                    <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
+                        <GradientStop Color="#8B5CF6" Offset="0"/>
+                        <GradientStop Color="#7C3AED" Offset="0.5"/>
+                        <GradientStop Color="#6366F1" Offset="1"/>
+                    </LinearGradientBrush>
+                </Border.Background>
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
                     
-            <Button Grid.Column="2" 
-                    Content="Cancel" 
-                    Command="{Binding CancelCommand}"
-                    IsEnabled="{Binding IsBusy}"
-                    VerticalAlignment="Bottom"
-                    Height="40"
-                    MinWidth="80"
-                    Background="#FF6B6B"
-                    Foreground="White"/>
+                    <!-- Title -->
+                    <StackPanel Grid.Column="0" 
+                                Orientation="Horizontal" 
+                                VerticalAlignment="Center" 
+                                Margin="20,0">
+                        <Path Fill="White" 
+                              Width="20" 
+                              Height="20" 
+                              Data="M12 2L2 7V10C2 16 6 20.5 12 22C18 20.5 22 16 22 10V7L12 2Z"
+                              Stretch="Uniform"
+                              Margin="0,0,10,0"/>
+                        <TextBlock Text="Office AI - Batu Lab" 
+                                   Foreground="White" 
+                                   FontWeight="SemiBold" 
+                                   FontSize="14"
+                                   VerticalAlignment="Center"/>
+                    </StackPanel>
+                    
+                    <!-- Window Controls -->
+                    <StackPanel Grid.Column="1" 
+                                Orientation="Horizontal">
+                        <Button Content="─" 
+                                Width="45" 
+                                Height="40" 
+                                Background="Transparent" 
+                                Foreground="White" 
+                                BorderThickness="0"
+                                FontSize="16"
+                                Click="MinimizeButton_Click"
+                                Style="{x:Null}">
+                            <Button.Template>
+                                <ControlTemplate TargetType="Button">
+                                    <Border Background="{TemplateBinding Background}">
+                                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                    </Border>
+                                    <ControlTemplate.Triggers>
+                                        <Trigger Property="IsMouseOver" Value="True">
+                                            <Setter Property="Background" Value="#33FFFFFF"/>
+                                        </Trigger>
+                                    </ControlTemplate.Triggers>
+                                </ControlTemplate>
+                            </Button.Template>
+                        </Button>
+                        <Button Content="□" 
+                                Width="45" 
+                                Height="40" 
+                                Background="Transparent" 
+                                Foreground="White" 
+                                BorderThickness="0"
+                                FontSize="14"
+                                Click="MaximizeButton_Click"
+                                Style="{x:Null}">
+                            <Button.Template>
+                                <ControlTemplate TargetType="Button">
+                                    <Border Background="{TemplateBinding Background}">
+                                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                    </Border>
+                                    <ControlTemplate.Triggers>
+                                        <Trigger Property="IsMouseOver" Value="True">
+                                            <Setter Property="Background" Value="#33FFFFFF"/>
+                                        </Trigger>
+                                    </ControlTemplate.Triggers>
+                                </ControlTemplate>
+                            </Button.Template>
+                        </Button>
+                        <Button Content="✕" 
+                                Width="45" 
+                                Height="40" 
+                                Background="Transparent" 
+                                Foreground="White" 
+                                BorderThickness="0"
+                                FontSize="14"
+                                Click="CloseButton_Click"
+                                Style="{x:Null}">
+                            <Button.Template>
+                                <ControlTemplate TargetType="Button">
+                                    <Border Background="{TemplateBinding Background}" CornerRadius="0,12,0,0">
+                                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                    </Border>
+                                    <ControlTemplate.Triggers>
+                                        <Trigger Property="IsMouseOver" Value="True">
+                                            <Setter Property="Background" Value="{StaticResource DangerBrush}"/>
+                                        </Trigger>
+                                    </ControlTemplate.Triggers>
+                                </ControlTemplate>
+                            </Button.Template>
+                        </Button>
+                    </StackPanel>
+                </Grid>
+            </Border>
+            
+            <!-- Header Section -->
+            <Border Grid.Row="1" 
+                    Margin="20,15,20,5">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    
+                    <!-- App Info -->
+                    <StackPanel Grid.Column="0">
+                        <TextBlock Text="Excel AI Assistant - Batu Lab" 
+                                   FontSize="24" 
+                                   FontWeight="Bold" 
+                                   Foreground="{StaticResource TextPrimaryBrush}"
+                                   Margin="0,0,0,5"/>
+                        <TextBlock Text="AI-powered Excel analysis and automation" 
+                                   FontSize="14" 
+                                   Foreground="{StaticResource TextSecondaryBrush}"/>
+                    </StackPanel>
+                    
+                    <!-- Quick Actions -->
+                    <StackPanel Grid.Column="1" 
+                                Orientation="Horizontal">
+                        <Button Content="📁 Browse Files" 
+                                Command="{Binding BrowseFileCommand}"
+                                Style="{StaticResource SecondaryButtonStyle}"
+                                Margin="10,0"/>
+                        <Button Content="📂 Open Folder" 
+                                Command="{Binding OpenFolderCommand}"
+                                Style="{StaticResource SecondaryButtonStyle}"/>
+                    </StackPanel>
+                </Grid>
+            </Border>
+            
+            <!-- Main Content Area -->
+            <Grid Grid.Row="2" Margin="20,5">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="5*"/>
+                    <ColumnDefinition Width="8"/>
+                    <ColumnDefinition Width="240" MinWidth="220"/>
+                </Grid.ColumnDefinitions>
+                
+                <!-- Chat Area -->
+                <Border Grid.Column="0" Style="{StaticResource CardStyle}">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+                        
+                        <!-- Chat Header -->
+                        <Border Grid.Row="0" 
+                                Background="{StaticResource CardHoverBrush}"
+                                CornerRadius="8,8,0,0"
+                                Padding="16,12">
+                            <TextBlock Text="💬 Conversation" 
+                                       FontSize="16" 
+                                       FontWeight="SemiBold"
+                                       Foreground="{StaticResource TextPrimaryBrush}"/>
+                        </Border>
+                        
+                        <!-- Chat Messages -->
+                        <ScrollViewer Grid.Row="1" 
+                                      x:Name="ChatScrollViewer" 
+                                      Padding="16"
+                                      Background="{StaticResource SurfaceBrush}">
+                            <ItemsControl ItemsSource="{Binding Messages}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Border Margin="0,0,0,15"
+                                                Background="{Binding IsUser, Converter={StaticResource BoolToBackgroundConverter}}"
+                                                CornerRadius="12"
+                                                Padding="16,12"
+                                                HorizontalAlignment="{Binding IsUser, Converter={x:Static local:MessageAlignmentConverter.Instance}}"
+                                                MaxWidth="400"
+                                                MouseRightButtonUp="MessageBorder_RightClick"
+                                                Tag="{Binding}">
+                                            <StackPanel>
+                                                <TextBlock Text="{Binding Role}" 
+                                                           FontWeight="SemiBold" 
+                                                           FontSize="11" 
+                                                           Foreground="{Binding IsUser, Converter={StaticResource BoolToForegroundConverter}}"
+                                                           Margin="0,0,0,4"
+                                                           Opacity="0.8"/>
+                                                <TextBlock Text="{Binding Content}" 
+                                                           TextWrapping="Wrap" 
+                                                           FontSize="14"
+                                                           LineHeight="20"
+                                                           Foreground="{Binding IsUser, Converter={StaticResource BoolToForegroundConverter}}"/>
+                                                <TextBlock Text="{Binding Timestamp, StringFormat='{}{0:HH:mm}'}" 
+                                                           FontSize="10" 
+                                                           Foreground="{Binding IsUser, Converter={StaticResource BoolToForegroundConverter}}"
+                                                           Opacity="0.6"
+                                                           HorizontalAlignment="Right" 
+                                                           Margin="0,6,0,0"/>
+                                            </StackPanel>
+                                            <Border.Effect>
+                                                <DropShadowEffect Color="{Binding Color, Source={StaticResource ShadowBrush}}" 
+                                                                BlurRadius="8" 
+                                                                ShadowDepth="2" 
+                                                                Opacity="0.06"/>
+                                            </Border.Effect>
+                                            <Border.ContextMenu>
+                                                <ContextMenu>
+                                                    <MenuItem Header="📋 Copy Message" 
+                                                              Click="CopyMessage_Click"
+                                                              Tag="{Binding}"/>
+                                                    <MenuItem Header="📄 Copy Content Only" 
+                                                              Click="CopyContent_Click"
+                                                              Tag="{Binding}"/>
+                                                    <Separator/>
+                                                    <MenuItem Header="🕐 Copy with Timestamp" 
+                                                              Click="CopyWithTimestamp_Click"
+                                                              Tag="{Binding}"/>
+                                                </ContextMenu>
+                                            </Border.ContextMenu>
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </ScrollViewer>
+                        
+                        <!-- Status -->
+                        <Border Grid.Row="2" 
+                                Background="{StaticResource WarningBrush}"
+                                CornerRadius="0,0,12,12"
+                                Padding="20,10"
+                                Visibility="{Binding IsBusy, Converter={StaticResource BooleanToVisibilityConverter}}">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="⏳" Margin="0,0,8,0"/>
+                                <TextBlock Text="{Binding StatusMessage}" 
+                                           Foreground="White"
+                                           FontWeight="SemiBold"/>
+                            </StackPanel>
+                        </Border>
+                    </Grid>
+                </Border>
+                
+                <!-- Sidebar -->
+                <StackPanel Grid.Column="2">
+                    <!-- File Info Card -->
+                    <Border Style="{StaticResource CardStyle}" Margin="0,0,0,10">
+                        <StackPanel>
+                            <TextBlock Text="📊 Active File" 
+                                       FontSize="14" 
+                                       FontWeight="SemiBold"
+                                       Foreground="{StaticResource TextPrimaryBrush}"
+                                       Margin="0,0,0,10"/>
+                            
+                            <Border Background="{StaticResource CardHoverBrush}"
+                                    CornerRadius="6"
+                                    Padding="12,8"
+                                    Margin="0,0,0,0">
+                                <TextBlock Text="{Binding CurrentFileName}" 
+                                           FontStyle="Italic" 
+                                           FontSize="12"
+                                           Foreground="{StaticResource TextSecondaryBrush}"
+                                           TextWrapping="Wrap"/>
+                            </Border>
+                        </StackPanel>
+                    </Border>
+                    
+                    <!-- AI Provider Card -->
+                    <Border Style="{StaticResource CardStyle}" Margin="0,0,0,10">
+                        <StackPanel>
+                            <TextBlock Text="🤖 AI Provider" 
+                                       FontSize="14" 
+                                       FontWeight="SemiBold"
+                                       Foreground="{StaticResource TextPrimaryBrush}"
+                                       Margin="0,0,0,10"/>
+                            
+                            <ComboBox x:Name="AiProviderComboBox"
+                                      SelectedValue="{Binding SelectedAiProvider}"
+                                      SelectionChanged="AiProviderComboBox_SelectionChanged"
+                                      Style="{StaticResource ModernComboBoxStyle}"
+                                      Margin="0,0,0,8">
+                                <ComboBoxItem Content="Claude" Tag="Claude"/>
+                                <ComboBoxItem Content="Gemini" Tag="Gemini"/>
+                                <ComboBoxItem Content="Groq" Tag="Groq"/>
+                                <Separator/>
+                                <ComboBoxItem Content="Claude CLI" Tag="Claude CLI"/>
+                                <ComboBoxItem Content="Claude Desktop" Tag="Claude Desktop"/>
+                                <ComboBoxItem Content="ChatGPT Desktop" Tag="ChatGPT Desktop"/>
+                            </ComboBox>
+                            
+                            <TextBlock Text="{Binding CurrentAiProviderStatus}" 
+                                       FontStyle="Italic" 
+                                       Foreground="{StaticResource SecondaryBrush}"
+                                       FontSize="11"
+                                       TextWrapping="Wrap"/>
+                        </StackPanel>
+                    </Border>
+                    
+                    <!-- Quick Tips Card -->
+                    <Border Style="{StaticResource CardStyle}" Margin="0,0,0,0">
+                        <StackPanel>
+                            <TextBlock Text="💡 Quick Tips" 
+                                       FontSize="14" 
+                                       FontWeight="SemiBold"
+                                       Foreground="{StaticResource TextPrimaryBrush}"
+                                       Margin="0,0,0,10"/>
+                            
+                            <StackPanel>
+                                <TextBlock Text="• Drag &amp; drop Excel files"
+                                           FontSize="11"
+                                           Foreground="{StaticResource TextSecondaryBrush}"
+                                           Margin="0,0,0,3"/>
+                                <TextBlock Text="• Ctrl+Enter to send"
+                                           FontSize="11"
+                                           Foreground="{StaticResource TextSecondaryBrush}"
+                                           Margin="0,0,0,3"/>
+                                <TextBlock Text="• Right-click messages to copy"
+                                           FontSize="11"
+                                           Foreground="{StaticResource TextSecondaryBrush}"
+                                           Margin="0,0,0,3"/>
+                                <TextBlock Text="• Excel tools available via AI"
+                                           FontSize="11"
+                                           Foreground="{StaticResource TextSecondaryBrush}"/>
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+            </Grid>
+            
+            <!-- Input Area -->
+            <Border Grid.Row="3" 
+                    Style="{StaticResource CardStyle}"
+                    Margin="20,5,20,15">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    
+                    <TextBox Grid.Column="0" 
+                             x:Name="InputTextBox"
+                             Text="{Binding InputText, UpdateSourceTrigger=PropertyChanged}" 
+                             Height="48"
+                             TextWrapping="Wrap"
+                             AcceptsReturn="False"
+                             VerticalScrollBarVisibility="Hidden"
+                             VerticalContentAlignment="Center"
+                             Style="{StaticResource ModernTextBoxStyle}"
+                             Margin="0,0,8,0">
+                        <TextBox.InputBindings>
+                            <KeyBinding Key="Enter" 
+                                        Command="{Binding SendCommand}" 
+                                        Modifiers="Control"/>
+                        </TextBox.InputBindings>
+                    </TextBox>
+                    
+                    <Button Grid.Column="1" 
+                            Content="Send" 
+                            Command="{Binding SendCommand}"
+                            IsEnabled="{Binding IsBusy, Converter={StaticResource InverseBoolConverter}}"
+                            Style="{StaticResource ModernButtonStyle}"
+                            Width="78"/>
+                            
+                    <Button Grid.Column="2" 
+                            Content="Cancel" 
+                            Command="{Binding CancelCommand}"
+                            IsEnabled="{Binding IsBusy}"
+                            Style="{StaticResource DangerButtonStyle}"
+                            Width="78"/>
+                </Grid>
+            </Border>
         </Grid>
-        
-        <!-- Footer -->
-        <StackPanel Grid.Row="6" 
-                    Orientation="Horizontal" 
-                    HorizontalAlignment="Center" 
-                    Margin="0,15,0,0">
-            <TextBlock Text="💡 Ctrl+Enter: Send • Click Cancel to stop • Drag &amp; drop Excel files • Right-click: Copy" 
-                       FontSize="12" 
-                       Foreground="#888888" 
-                       Margin="0,0,20,0"/>
-            <TextBlock Text="📊 Excel functions available through AI" 
-                       FontSize="12" 
-                       Foreground="#888888"/>
-        </StackPanel>
-    </Grid>
+    </Border>
 </Window>
