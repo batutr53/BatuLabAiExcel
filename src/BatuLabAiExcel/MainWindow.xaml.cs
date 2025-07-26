@@ -178,4 +178,16 @@ public partial class MainWindow : Window
             ScrollToBottom();
         }
     }
+
+    private void AiProviderComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (sender is ComboBox comboBox && comboBox.SelectedItem is ComboBoxItem selectedItem)
+        {
+            var provider = selectedItem.Tag?.ToString();
+            if (DataContext is MainViewModel viewModel && !string.IsNullOrEmpty(provider))
+            {
+                viewModel.ChangeAiProvider(provider);
+            }
+        }
+    }
 }

@@ -156,6 +156,9 @@ public class McpSchemaProperty
 
     [JsonPropertyName("items")]
     public McpSchemaProperty? Items { get; set; }
+
+    [JsonPropertyName("default")]
+    public object? Default { get; set; }
 }
 
 /// <summary>

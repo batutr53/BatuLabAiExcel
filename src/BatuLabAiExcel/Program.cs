@@ -43,14 +43,26 @@ public static class Program
                 // Configuration
                 services.Configure<AppConfiguration>(context.Configuration);
                 services.Configure<AppConfiguration.ClaudeSettings>(context.Configuration.GetSection("Claude"));
+                services.Configure<AppConfiguration.GeminiSettings>(context.Configuration.GetSection("Gemini"));
+                services.Configure<AppConfiguration.AiProviderSettings>(context.Configuration.GetSection("AiProvider"));
                 services.Configure<AppConfiguration.McpSettings>(context.Configuration.GetSection("Mcp"));
 
-                // HTTP Client
+                // HTTP Clients
                 services.AddHttpClient<IClaudeService, ClaudeService>();
+                services.AddHttpClient<IGeminiService, GeminiService>();
 
-                // Services
-                services.AddSingleton<IChatOrchestrator, ChatOrchestrator>();
+                // AI Services
                 services.AddSingleton<IClaudeService, ClaudeService>();
+                services.AddSingleton<IGeminiService, GeminiService>();
+                
+                // AI Provider Factory
+                services.AddSingleton<IAiServiceFactory, AiServiceFactory>();
+                
+                services.AddSingleton<ClaudeAiService>();
+                services.AddSingleton<GeminiAiService>();
+
+                // MCP and Chat Services
+                services.AddSingleton<IChatOrchestrator, ChatOrchestrator>();
                 services.AddSingleton<IMcpClient, McpClient>();
                 
                 // ViewModels

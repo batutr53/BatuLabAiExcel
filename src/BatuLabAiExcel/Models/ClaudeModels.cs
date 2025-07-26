@@ -17,10 +17,24 @@ public class ClaudeRequest
     public List<ClaudeMessage> Messages { get; set; } = new();
 
     [JsonPropertyName("tools")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public List<ClaudeTool>? Tools { get; set; }
 
     [JsonPropertyName("tool_choice")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public object? ToolChoice { get; set; }
+
+    [JsonPropertyName("temperature")]
+    public double? Temperature { get; set; }
+
+    [JsonPropertyName("top_p")]
+    public double? TopP { get; set; }
+
+    [JsonPropertyName("top_k")]
+    public int? TopK { get; set; }
+
+    [JsonPropertyName("stream")]
+    public bool Stream { get; set; } = false;
 }
 
 public class ClaudeMessage
@@ -30,6 +44,22 @@ public class ClaudeMessage
 
     [JsonPropertyName("content")]
     public object Content { get; set; } = string.Empty;
+
+    // Helper constructor for text messages
+    public ClaudeMessage(string role, string text)
+    {
+        Role = role;
+        Content = text;
+    }
+
+    // Helper constructor for content blocks (tool results)
+    public ClaudeMessage(string role, List<object> contentBlocks)
+    {
+        Role = role;
+        Content = contentBlocks;
+    }
+
+    public ClaudeMessage() { }
 }
 
 public class ClaudeTextContent
@@ -68,6 +98,7 @@ public class ClaudeToolResultContent
     public string Content { get; set; } = string.Empty;
 
     [JsonPropertyName("is_error")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public bool? IsError { get; set; }
 }
 
@@ -89,25 +120,57 @@ public class ClaudeToolSchema
     public string Type { get; set; } = "object";
 
     [JsonPropertyName("properties")]
-    public Dictionary<string, ClaudeSchemaProperty> Properties { get; set; } = new();
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public Dictionary<string, ClaudeSchemaProperty>? Properties { get; set; }
 
     [JsonPropertyName("required")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public List<string>? Required { get; set; }
+
+    [JsonPropertyName("additionalProperties")]
+    public bool AdditionalProperties { get; set; } = false;
+
+    [JsonPropertyName("$schema")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? Schema { get; set; }
 }
 
 public class ClaudeSchemaProperty
 {
     [JsonPropertyName("type")]
-    public string Type { get; set; } = string.Empty;
+    public string Type { get; set; } = "string";
 
     [JsonPropertyName("description")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public string? Description { get; set; }
 
     [JsonPropertyName("enum")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public List<string>? Enum { get; set; }
 
     [JsonPropertyName("items")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public ClaudeSchemaProperty? Items { get; set; }
+
+    [JsonPropertyName("default")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public object? Default { get; set; }
+
+    [JsonPropertyName("format")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? Format { get; set; }
+
+    [JsonPropertyName("minimum")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public double? Minimum { get; set; }
+
+    [JsonPropertyName("maximum")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public double? Maximum { get; set; }
+
+    [JsonPropertyName("pattern")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? Pattern { get; set; }
 }
 
 /// <summary>
@@ -146,15 +209,19 @@ public class ClaudeContentBlock
     public string Type { get; set; } = string.Empty;
 
     [JsonPropertyName("text")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public string? Text { get; set; }
 
     [JsonPropertyName("id")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public string? Id { get; set; }
 
     [JsonPropertyName("name")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public string? Name { get; set; }
 
     [JsonPropertyName("input")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public object? Input { get; set; }
 }
 

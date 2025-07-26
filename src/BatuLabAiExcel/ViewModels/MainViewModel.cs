@@ -19,6 +19,7 @@ public partial class MainViewModel : ViewModelBase
 {
     private readonly IChatOrchestrator _chatOrchestrator;
     private readonly ILogger<MainViewModel> _logger;
+    private CancellationTokenSource? _currentOperationCts;
 
     [ObservableProperty]
     private string _inputText = string.Empty;
@@ -28,6 +29,12 @@ public partial class MainViewModel : ViewModelBase
 
     [ObservableProperty]
     private string _currentFileName = "No file selected";
+
+    [ObservableProperty]
+    private string _selectedAiProvider = "Claude";
+
+    [ObservableProperty]
+    private string _currentAiProviderStatus = "Ready";
 
     [ObservableProperty]
     private string _currentFilePath = string.Empty;
@@ -50,6 +57,15 @@ public partial class MainViewModel : ViewModelBase
             "• Apply formulas and calculations\n\n" +
             "Example: \"Read data from Sheet1!A1:C10 and summarize it for me.\""));
     }
+
+    [RelayCommand(CanExecute = nameof(CanCancel))]
+    private void Cancel()
+    {
+        _currentOperationCts?.Cancel();
+        _logger.LogInformation("User cancelled current operation");
+    }
+    
+    private bool CanCancel => IsBusy;
 
     [RelayCommand]
     private void BrowseFile()
@@ -208,7 +224,11 @@ public partial class MainViewModel : ViewModelBase
         Messages.Add(chatMessage);
         RequestScrollToBottom?.Invoke();
 
-        SetBusy(true, "Processing your request...");
+        SetBusy(true, "Initializing AI connection...");
+
+        // Cancel any existing operation
+        _currentOperationCts?.Cancel();
+        _currentOperationCts = new CancellationTokenSource(TimeSpan.FromMinutes(5)); // 5 minute timeout
 
         try
         {
@@ -219,33 +239,80 @@ public partial class MainViewModel : ViewModelBase
                 ? $"No Excel file is currently selected. User message: {userMessage}"
                 : $"Current Excel file: {CurrentFileName} (path: {CurrentFilePath}). User message: {userMessage}";
 
-            var result = await _chatOrchestrator.ProcessMessageAsync(contextualMessage, CancellationToken.None);
-
-            if (result.IsSuccess)
+            // Update status and run processing on background thread
+            await System.Windows.Application.Current.Dispatcher.InvokeAsync(() =>
             {
-                var assistantMessage = ChatMessage.CreateAssistantMessage(result.Value ?? "No response received.");
-                Messages.Add(assistantMessage);
-                _logger.LogInformation("Successfully processed message");
+                SetBusy(true, "Processing with AI...");
+            });
+
+            // Run the processing on a background thread to avoid UI blocking
+            var result = await Task.Run(async () => 
+            {
+                try
+                {
+                    return await _chatOrchestrator.ProcessMessageAsync(contextualMessage, _currentOperationCts.Token);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Error in background processing");
+                    return Result<string>.Failure($"Background processing error: {ex.Message}");
+                }
+            }, _currentOperationCts.Token);
+
+            if (_currentOperationCts.Token.IsCancellationRequested)
+            {
+                return;
             }
-            else
+
+            // Update UI on the UI thread
+            await System.Windows.Application.Current.Dispatcher.InvokeAsync(() =>
+            {
+                if (result.IsSuccess)
+                {
+                    var assistantMessage = ChatMessage.CreateAssistantMessage(result.Value ?? "No response received.");
+                    Messages.Add(assistantMessage);
+                    _logger.LogInformation("Successfully processed message");
+                }
+                else
+                {
+                    var errorMessage = ChatMessage.CreateSystemMessage(
+                        $"❌ Error: {result.Error}\n\nPlease check your configuration and try again.");
+                    Messages.Add(errorMessage);
+                    _logger.LogError("Error processing message: {Error}", result.Error);
+                }
+                RequestScrollToBottom?.Invoke();
+            });
+        }
+        catch (OperationCanceledException) when (_currentOperationCts?.Token.IsCancellationRequested == true)
+        {
+            await System.Windows.Application.Current.Dispatcher.InvokeAsync(() =>
             {
                 var errorMessage = ChatMessage.CreateSystemMessage(
-                    $"❌ Error: {result.Error}\n\nPlease check your configuration and try again.");
+                    "⏸️ Operation was cancelled or timed out.\n\nTry breaking your request into smaller parts or check your connection.");
                 Messages.Add(errorMessage);
-                _logger.LogError("Error processing message: {Error}", result.Error);
-            }
+                RequestScrollToBottom?.Invoke();
+            });
+            _logger.LogWarning("Operation was cancelled or timed out");
         }
         catch (Exception ex)
         {
-            var errorMessage = ChatMessage.CreateSystemMessage(
-                $"❌ Unexpected error: {ex.Message}\n\nPlease try again or contact support if the problem persists.");
-            Messages.Add(errorMessage);
+            await System.Windows.Application.Current.Dispatcher.InvokeAsync(() =>
+            {
+                var errorMessage = ChatMessage.CreateSystemMessage(
+                    $"❌ Unexpected error: {ex.Message}\n\nPlease try again or contact support if the problem persists.");
+                Messages.Add(errorMessage);
+                RequestScrollToBottom?.Invoke();
+            });
             _logger.LogError(ex, "Unexpected error processing message");
         }
         finally
         {
-            SetBusy(false);
-            RequestScrollToBottom?.Invoke();
+            await System.Windows.Application.Current.Dispatcher.InvokeAsync(() =>
+            {
+                SetBusy(false);
+            });
+            _currentOperationCts?.Dispose();
+            _currentOperationCts = null;
         }
     }
 
@@ -263,6 +330,44 @@ public partial class MainViewModel : ViewModelBase
         if (e.PropertyName == nameof(IsBusy))
         {
             SendCommand.NotifyCanExecuteChanged();
+            CancelCommand.NotifyCanExecuteChanged();
+        }
+    }
+
+    public void ChangeAiProvider(string provider)
+    {
+        try
+        {
+            if (string.IsNullOrEmpty(provider))
+                return;
+
+            var previousProvider = SelectedAiProvider;
+            SelectedAiProvider = provider;
+            CurrentAiProviderStatus = $"Switched to {provider}";
+
+            // Update the orchestrator's current provider
+            _chatOrchestrator.SetCurrentProvider(provider);
+
+            _logger.LogInformation("AI Provider changed from {Previous} to {Current}", previousProvider, provider);
+
+            // Add system message to inform user
+            var message = ChatMessage.CreateSystemMessage($"🔄 AI Provider switched to {provider}");
+            Messages.Add(message);
+            RequestScrollToBottom?.Invoke();
+
+            // Reset status after 3 seconds
+            _ = Task.Delay(3000).ContinueWith(_ =>
+            {
+                System.Windows.Application.Current.Dispatcher.Invoke(() =>
+                {
+                    CurrentAiProviderStatus = "Ready";
+                });
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error changing AI provider to {Provider}", provider);
+            CurrentAiProviderStatus = "Error switching provider";
         }
     }
 }

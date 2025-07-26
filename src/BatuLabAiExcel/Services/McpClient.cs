@@ -76,7 +76,7 @@ public class McpClient : IMcpClient
                 Params = new { }
             };
 
-            var response = await SendRequestAsync<McpListToolsResult>(request, cancellationToken);
+            var response = await SendRequestAsync<McpListToolsResult>(request, cancellationToken).ConfigureAwait(false);
             if (!response.IsSuccess)
             {
                 return Result<List<McpTool>>.Failure(response.Error ?? "Failed to get tools");
@@ -118,7 +118,7 @@ public class McpClient : IMcpClient
             _logger.LogDebug("Calling MCP tool: {ToolName} with arguments: {Arguments}", 
                 toolName, JsonSerializer.Serialize(arguments, JsonOptions));
 
-            var response = await SendRequestAsync<McpCallToolResult>(request, cancellationToken);
+            var response = await SendRequestAsync<McpCallToolResult>(request, cancellationToken).ConfigureAwait(false);
             if (!response.IsSuccess)
             {
                 _logger.LogError("MCP tool call failed: {Error}", response.Error);
@@ -158,7 +158,7 @@ public class McpClient : IMcpClient
         try
         {
             // Try to get tools as a health check
-            var toolsResult = await GetAvailableToolsAsync(cancellationToken);
+            var toolsResult = await GetAvailableToolsAsync(cancellationToken).ConfigureAwait(false);
             return toolsResult.IsSuccess 
                 ? Result.Success() 
                 : Result.Failure($"Health check failed: {toolsResult.Error}");
@@ -187,14 +187,14 @@ public class McpClient : IMcpClient
             }
 
             // Start MCP server process
-            var processResult = await StartMcpProcessAsync(cancellationToken);
+            var processResult = await StartMcpProcessAsync(cancellationToken).ConfigureAwait(false);
             if (!processResult.IsSuccess)
             {
                 return processResult;
             }
 
             // Perform MCP handshake
-            var handshakeResult = await PerformHandshakeAsync(cancellationToken);
+            var handshakeResult = await PerformHandshakeAsync(cancellationToken).ConfigureAwait(false);
             if (!handshakeResult.IsSuccess)
             {
                 return handshakeResult;
@@ -224,7 +224,7 @@ public class McpClient : IMcpClient
             string? configuredCommand = null;
             if (_settings.UseConfigFile)
             {
-                configuredCommand = await TryLoadFromConfigFile();
+                configuredCommand = await TryLoadFromConfigFile().ConfigureAwait(false);
             }
 
             // Build list of scripts to try
@@ -254,7 +254,7 @@ public class McpClient : IMcpClient
                 {
                     _logger.LogInformation("Attempting to start MCP server with: {Script}", script);
                     
-                    var result = await TryStartWithScript(script, cancellationToken);
+                    var result = await TryStartWithScript(script, cancellationToken).ConfigureAwait(false);
                     if (result.IsSuccess)
                     {
                         return result;
@@ -272,11 +272,11 @@ public class McpClient : IMcpClient
             if (_settings.AutoInstall)
             {
                 _logger.LogInformation("Attempting automatic installation of excel-mcp-server");
-                var installResult = await TryAutoInstall(cancellationToken);
+                var installResult = await TryAutoInstall(cancellationToken).ConfigureAwait(false);
                 if (installResult.IsSuccess)
                 {
-                    var pythonExe = await FindPythonExecutableAsync();
-                    return await TryStartWithScript($"{pythonExe} -m excel_mcp_server stdio", cancellationToken);
+                    var pythonExe = await FindPythonExecutableAsync().ConfigureAwait(false);
+                    return await TryStartWithScript($"{pythonExe} -m excel_mcp_server stdio", cancellationToken).ConfigureAwait(false);
                 }
             }
 
@@ -303,7 +303,7 @@ public class McpClient : IMcpClient
                 return null;
             }
 
-            var configJson = await File.ReadAllTextAsync(configPath);
+            var configJson = await File.ReadAllTextAsync(configPath).ConfigureAwait(false);
             using var doc = JsonDocument.Parse(configJson);
             
             if (doc.RootElement.TryGetProperty("mcp_server", out var mcpServer))
@@ -339,7 +339,7 @@ public class McpClient : IMcpClient
         ProcessStartInfo startInfo;
 
         // Try to find the best Python executable
-        string pythonExe = await FindPythonExecutableAsync();
+        string pythonExe = await FindPythonExecutableAsync().ConfigureAwait(false);
         
         // Replace 'python' with the found executable in the script
         if (script.StartsWith("python "))
@@ -394,9 +394,26 @@ public class McpClient : IMcpClient
         process.EnableRaisingEvents = true;
         process.Exited += OnMcpProcessExited;
 
-        if (!process.Start())
+        try
         {
-            return Result.Failure("Failed to start MCP server process");
+            if (!process.Start())
+            {
+                return Result.Failure("Failed to start MCP server process");
+            }
+        }
+        catch (System.ComponentModel.Win32Exception ex)
+        {
+            _logger.LogError(ex, "Win32Exception starting process: {FileName} {Arguments}", 
+                startInfo.FileName, startInfo.Arguments);
+            
+            return Result.Failure($"Cannot start '{startInfo.FileName}': {ex.Message}. " +
+                                "This usually means the executable is not found in PATH or the path is incorrect. " +
+                                "Try running the comprehensive setup: scripts\\setup_python_and_mcp.ps1");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Exception starting MCP process");
+            return Result.Failure($"Error starting MCP server: {ex.Message}");
         }
 
         lock (_processLock)
@@ -404,14 +421,23 @@ public class McpClient : IMcpClient
             _mcpProcess = process;
         }
 
-        // Give the process a moment to start
-        await Task.Delay(2000, cancellationToken);
+        // Give the process a moment to start, but use ConfigureAwait(false) to avoid blocking
+        await Task.Delay(1500, cancellationToken).ConfigureAwait(false);
 
         if (process.HasExited)
         {
-            var errorOutput = await process.StandardError.ReadToEndAsync(cancellationToken);
-            _logger.LogWarning("Process exited with output: {Output}", errorOutput);
-            return Result.Failure($"MCP server process exited immediately: {errorOutput}");
+            try
+            {
+                var errorOutput = await process.StandardError.ReadToEndAsync(cancellationToken).ConfigureAwait(false);
+                _logger.LogWarning("Process exited immediately with code {ExitCode}, output: {Output}", 
+                    process.ExitCode, errorOutput);
+                return Result.Failure($"MCP server process exited immediately (code {process.ExitCode}): {errorOutput}");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Could not read error output from exited process");
+                return Result.Failure($"MCP server process exited immediately (code {process.ExitCode})");
+            }
         }
 
         _logger.LogInformation("MCP server process started with PID: {ProcessId}", process.Id);
@@ -424,7 +450,7 @@ public class McpClient : IMcpClient
         {
             _logger.LogInformation("Installing excel-mcp-server via pip");
             
-            string pythonExe = await FindPythonExecutableAsync();
+            string pythonExe = await FindPythonExecutableAsync().ConfigureAwait(false);
             
             var installProcess = new Process
             {
@@ -440,7 +466,7 @@ public class McpClient : IMcpClient
             };
 
             installProcess.Start();
-            await installProcess.WaitForExitAsync(cancellationToken);
+            await installProcess.WaitForExitAsync(cancellationToken).ConfigureAwait(false);
 
             if (installProcess.ExitCode == 0)
             {
@@ -449,7 +475,7 @@ public class McpClient : IMcpClient
             }
             else
             {
-                var error = await installProcess.StandardError.ReadToEndAsync(cancellationToken);
+                var error = await installProcess.StandardError.ReadToEndAsync(cancellationToken).ConfigureAwait(false);
                 _logger.LogError("Installation failed: {Error}", error);
                 return Result.Failure($"Installation failed: {error}");
             }
@@ -512,11 +538,11 @@ public class McpClient : IMcpClient
                 };
 
                 testProcess.Start();
-                await testProcess.WaitForExitAsync();
+                await testProcess.WaitForExitAsync().ConfigureAwait(false);
 
                 if (testProcess.ExitCode == 0)
                 {
-                    var version = await testProcess.StandardOutput.ReadToEndAsync();
+                    var version = await testProcess.StandardOutput.ReadToEndAsync().ConfigureAwait(false);
                     _logger.LogInformation("Found Python: {Version} at {Path}", version.Trim(), candidate);
                     return candidate;
                 }
@@ -551,7 +577,7 @@ public class McpClient : IMcpClient
                 }
             };
 
-            var initResponse = await SendRequestAsync<McpInitializeResult>(initializeRequest, cancellationToken);
+            var initResponse = await SendRequestAsync<McpInitializeResult>(initializeRequest, cancellationToken).ConfigureAwait(false);
             if (!initResponse.IsSuccess)
             {
                 return Result.Failure($"Initialize failed: {initResponse.Error}");
@@ -568,7 +594,7 @@ public class McpClient : IMcpClient
                 Params = new { }
             };
 
-            await SendNotificationAsync(initializedNotification, cancellationToken);
+            await SendNotificationAsync(initializedNotification, cancellationToken).ConfigureAwait(false);
             
             return Result.Success();
         }
@@ -598,14 +624,14 @@ public class McpClient : IMcpClient
             var json = JsonSerializer.Serialize(request, JsonOptions);
             _logger.LogTrace("Sending MCP request: {Request}", json);
 
-            await process.StandardInput.WriteLineAsync(json.AsMemory(), cancellationToken);
-            await process.StandardInput.FlushAsync();
+            await process.StandardInput.WriteLineAsync(json.AsMemory(), cancellationToken).ConfigureAwait(false);
+            await process.StandardInput.FlushAsync().ConfigureAwait(false);
 
             // Read response
             using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
             cts.CancelAfter(TimeSpan.FromSeconds(_settings.TimeoutSeconds));
 
-            var responseLine = await process.StandardOutput.ReadLineAsync(cts.Token);
+            var responseLine = await process.StandardOutput.ReadLineAsync(cts.Token).ConfigureAwait(false);
             if (string.IsNullOrEmpty(responseLine))
             {
                 return Result<T>.Failure("No response from MCP server");
@@ -666,8 +692,8 @@ public class McpClient : IMcpClient
             var json = JsonSerializer.Serialize(notification, JsonOptions);
             _logger.LogTrace("Sending MCP notification: {Notification}", json);
 
-            await process.StandardInput.WriteLineAsync(json.AsMemory(), cancellationToken);
-            await process.StandardInput.FlushAsync();
+            await process.StandardInput.WriteLineAsync(json.AsMemory(), cancellationToken).ConfigureAwait(false);
+            await process.StandardInput.FlushAsync().ConfigureAwait(false);
         }
         catch (Exception ex)
         {
@@ -695,8 +721,8 @@ public class McpClient : IMcpClient
             {
                 try
                 {
-                    await Task.Delay(2000); // Wait 2 seconds before restart
-                    await InitializeAsync(CancellationToken.None);
+                    await Task.Delay(2000).ConfigureAwait(false); // Wait 2 seconds before restart
+                    await InitializeAsync(CancellationToken.None).ConfigureAwait(false);
                 }
                 catch (Exception ex)
                 {

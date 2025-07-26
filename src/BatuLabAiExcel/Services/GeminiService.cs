@@ -9,13 +9,13 @@ using BatuLabAiExcel.Models;
 namespace BatuLabAiExcel.Services;
 
 /// <summary>
-/// Service for interacting with Claude API
+/// Service for interacting with Gemini API
 /// </summary>
-public class ClaudeService : IClaudeService
+public class GeminiService : IGeminiService
 {
     private readonly HttpClient _httpClient;
-    private readonly AppConfiguration.ClaudeSettings _settings;
-    private readonly ILogger<ClaudeService> _logger;
+    private readonly AppConfiguration.GeminiSettings _settings;
+    private readonly ILogger<GeminiService> _logger;
     private static DateTime _lastRequestTime = DateTime.MinValue;
     private static readonly object _requestLock = new object();
 
@@ -25,10 +25,10 @@ public class ClaudeService : IClaudeService
         WriteIndented = false
     };
 
-    public ClaudeService(
+    public GeminiService(
         HttpClient httpClient,
-        IOptions<AppConfiguration.ClaudeSettings> settings,
-        ILogger<ClaudeService> logger)
+        IOptions<AppConfiguration.GeminiSettings> settings,
+        ILogger<GeminiService> logger)
     {
         _httpClient = httpClient;
         _settings = settings.Value;
@@ -37,100 +37,100 @@ public class ClaudeService : IClaudeService
         ConfigureHttpClient();
     }
 
-    public async Task<Result<ClaudeResponse>> SendMessageAsync(
-        List<ClaudeMessage> messages,
-        List<ClaudeTool>? tools = null,
+    public async Task<Result<GeminiResponse>> SendMessageAsync(
+        List<GeminiContent> contents,
+        List<GeminiFunctionDeclaration>? functions = null,
         CancellationToken cancellationToken = default)
     {
         try
         {
             // Rate limiting: ensure delay between requests
             await EnsureRequestDelayAsync(cancellationToken);
+            
             if (string.IsNullOrEmpty(_settings.ApiKey))
             {
-                return Result<ClaudeResponse>.Failure("Claude API key is not configured");
+                return Result<GeminiResponse>.Failure("Gemini API key is not configured");
             }
 
-            var request = new ClaudeRequest
+            var request = new GeminiRequest
             {
-                Model = _settings.Model,
-                MaxTokens = _settings.MaxTokens,
-                Messages = messages,
-                Temperature = _settings.Temperature,
-                TopP = _settings.TopP,
-                TopK = _settings.TopK,
-                Stream = false
+                Contents = contents,
+                GenerationConfig = new GeminiGenerationConfig
+                {
+                    Temperature = _settings.Temperature,
+                    TopP = _settings.TopP,
+                    TopK = _settings.TopK,
+                    MaxOutputTokens = _settings.MaxTokens
+                }
             };
 
-            if (tools?.Any() == true)
+            if (functions?.Any() == true)
             {
-                request.Tools = tools;
-                request.ToolChoice = new { type = "auto" };
-            }
-            else
-            {
-                // Ensure tool_choice is not set when no tools are provided
-                request.ToolChoice = null;
+                request.Tools = new List<GeminiTool>
+                {
+                    new GeminiTool { FunctionDeclarations = functions }
+                };
             }
 
             var jsonRequest = JsonSerializer.Serialize(request, JsonOptions);
-            _logger.LogDebug("Sending Claude request: {Request}", 
+            _logger.LogDebug("Sending Gemini request: {Request}", 
                 jsonRequest.Length > 1000 ? $"{jsonRequest[..1000]}..." : jsonRequest);
 
             var content = new StringContent(jsonRequest, Encoding.UTF8, "application/json");
-
-            using var response = await _httpClient.PostAsync("/v1/messages", content, cancellationToken);
+            
+            var endpoint = $"/models/{_settings.Model}:generateContent";
+            using var response = await _httpClient.PostAsync(endpoint, content, cancellationToken);
 
             var responseContent = await response.Content.ReadAsStringAsync(cancellationToken);
 
             if (!response.IsSuccessStatusCode)
             {
-                _logger.LogError("Claude API error: {StatusCode} - {Content}", 
+                _logger.LogError("Gemini API error: {StatusCode} - {Content}", 
                     response.StatusCode, responseContent);
 
                 try
                 {
-                    var errorResponse = JsonSerializer.Deserialize<ClaudeErrorResponse>(responseContent, JsonOptions);
-                    return Result<ClaudeResponse>.Failure(
-                        $"Claude API error ({response.StatusCode}): {errorResponse?.Error?.Message ?? responseContent}");
+                    var errorResponse = JsonSerializer.Deserialize<GeminiErrorResponse>(responseContent, JsonOptions);
+                    return Result<GeminiResponse>.Failure(
+                        $"Gemini API error ({response.StatusCode}): {errorResponse?.Error?.Message ?? responseContent}");
                 }
                 catch
                 {
-                    return Result<ClaudeResponse>.Failure(
-                        $"Claude API error ({response.StatusCode}): {responseContent}");
+                    return Result<GeminiResponse>.Failure(
+                        $"Gemini API error ({response.StatusCode}): {responseContent}");
                 }
             }
 
-            var claudeResponse = JsonSerializer.Deserialize<ClaudeResponse>(responseContent, JsonOptions);
-            if (claudeResponse == null)
+            var geminiResponse = JsonSerializer.Deserialize<GeminiResponse>(responseContent, JsonOptions);
+            if (geminiResponse == null)
             {
-                return Result<ClaudeResponse>.Failure("Failed to deserialize Claude response");
+                return Result<GeminiResponse>.Failure("Failed to deserialize Gemini response");
             }
 
-            _logger.LogInformation("Claude response received: {TokensUsed} tokens used",
-                claudeResponse.Usage?.OutputTokens ?? 0);
+            _logger.LogInformation("Gemini response received: {TokensUsed} tokens used",
+                geminiResponse.UsageMetadata?.TotalTokenCount ?? 0);
 
-            return Result<ClaudeResponse>.Success(claudeResponse);
+            return Result<GeminiResponse>.Success(geminiResponse);
         }
         catch (TaskCanceledException ex) when (ex.InnerException is TimeoutException)
         {
-            _logger.LogError("Claude request timed out");
-            return Result<ClaudeResponse>.Failure("Request timed out. Please try again.");
+            _logger.LogError("Gemini request timed out");
+            return Result<GeminiResponse>.Failure("Request timed out. Please try again.");
         }
         catch (HttpRequestException ex)
         {
-            _logger.LogError(ex, "HTTP error calling Claude API");
-            return Result<ClaudeResponse>.Failure($"Network error: {ex.Message}");
+            _logger.LogError(ex, "HTTP error calling Gemini API");
+            return Result<GeminiResponse>.Failure($"Network error: {ex.Message}");
         }
         catch (JsonException ex)
         {
             _logger.LogError(ex, "JSON serialization error");
-            return Result<ClaudeResponse>.Failure($"Data format error: {ex.Message}");
+            return Result<GeminiResponse>.Failure($"Data format error: {ex.Message}");
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Unexpected error calling Claude API");
-            return Result<ClaudeResponse>.Failure($"Unexpected error: {ex.Message}");
+            _logger.LogError(ex, "Unexpected error calling Gemini API");
+            return Result<GeminiResponse>.Failure($"Unexpected error: {ex.Message}");
         }
     }
 
@@ -138,13 +138,11 @@ public class ClaudeService : IClaudeService
     {
         _httpClient.BaseAddress = new Uri(_settings.BaseUrl);
         _httpClient.DefaultRequestHeaders.Clear();
-        _httpClient.DefaultRequestHeaders.Add("x-api-key", _settings.ApiKey);
-        _httpClient.DefaultRequestHeaders.Add("anthropic-version", _settings.ApiVersion);
-        _httpClient.DefaultRequestHeaders.Add("anthropic-beta", "tools-2024-04-04");
+        _httpClient.DefaultRequestHeaders.Add("x-goog-api-key", _settings.ApiKey);
         _httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
         _httpClient.Timeout = TimeSpan.FromSeconds(_settings.TimeoutSeconds);
 
-        _logger.LogInformation("Claude service configured with API key: {MaskedKey}", 
+        _logger.LogInformation("Gemini service configured with API key: {MaskedKey}", 
             _settings.GetMaskedApiKey());
     }
 

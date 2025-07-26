@@ -8,7 +8,21 @@
       "Bash(move:*)",
       "Bash(mv:*)",
       "Bash(rmdir:*)",
-      "Bash(dotnet build)"
+      "Bash(dotnet build)",
+      "Bash(powershell:*)",
+      "Bash(dir scripts)",
+      "Bash(dir)",
+      "Bash(dotnet run)",
+      "Bash(start src/BatuLabAiExcel/bin/Debug/net9.0-windows/BatuLabAiExcel.exe)",
+      "Bash(./BatuLabAiExcel.exe)",
+      "Bash(taskkill:*)",
+      "Bash(python:*)",
+      "Bash(excel-mcp-server:*)",
+      "Bash(dotnet build:*)",
+      "WebFetch(domain:spec.modelcontextprotocol.io)",
+      "WebFetch(domain:modelcontextprotocol.io)",
+      "WebFetch(domain:docs.anthropic.com)",
+      "WebFetch(domain:ai.google.dev)"
     ],
     "deny": []
   }

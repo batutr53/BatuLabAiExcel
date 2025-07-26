@@ -34,6 +34,7 @@
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
         
         <!-- Header -->
@@ -145,10 +146,37 @@
             </StackPanel>
         </Border>
 
+        <!-- AI Provider Selection -->
+        <Border Grid.Row="4" 
+                BorderBrush="#E1E1E1" 
+                BorderThickness="1" 
+                CornerRadius="4"
+                Background="#F5F5F5"
+                Margin="0,0,0,10"
+                Padding="10">
+            <StackPanel Orientation="Horizontal">
+                <TextBlock Text="🤖" FontSize="16" Margin="0,0,8,0" VerticalAlignment="Center"/>
+                <TextBlock Text="AI Provider:" FontWeight="SemiBold" Margin="0,0,8,0" VerticalAlignment="Center"/>
+                <ComboBox x:Name="AiProviderComboBox"
+                          MinWidth="120"
+                          SelectedValue="{Binding SelectedAiProvider}"
+                          SelectionChanged="AiProviderComboBox_SelectionChanged">
+                    <ComboBoxItem Content="Claude" Tag="Claude"/>
+                    <ComboBoxItem Content="Gemini" Tag="Gemini"/>
+                </ComboBox>
+                <TextBlock Text="{Binding CurrentAiProviderStatus}" 
+                           FontStyle="Italic" 
+                           Foreground="#0078D4" 
+                           VerticalAlignment="Center"
+                           Margin="10,0,0,0"/>
+            </StackPanel>
+        </Border>
+
         <!-- Input Area -->
-        <Grid Grid.Row="4" Margin="0,15,0,0">
+        <Grid Grid.Row="5" Margin="0,15,0,0">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition Width="Auto"/>
             </Grid.ColumnDefinitions>
             
@@ -176,15 +204,26 @@
                     IsEnabled="{Binding IsBusy, Converter={StaticResource InverseBoolConverter}}"
                     VerticalAlignment="Bottom"
                     Height="40"
-                    MinWidth="80"/>
+                    MinWidth="80"
+                    Margin="0,0,5,0"/>
+                    
+            <Button Grid.Column="2" 
+                    Content="Cancel" 
+                    Command="{Binding CancelCommand}"
+                    IsEnabled="{Binding IsBusy}"
+                    VerticalAlignment="Bottom"
+                    Height="40"
+                    MinWidth="80"
+                    Background="#FF6B6B"
+                    Foreground="White"/>
         </Grid>
         
         <!-- Footer -->
-        <StackPanel Grid.Row="5" 
+        <StackPanel Grid.Row="6" 
                     Orientation="Horizontal" 
                     HorizontalAlignment="Center" 
                     Margin="0,15,0,0">
-            <TextBlock Text="💡 Ctrl+Enter: Send • Drag &amp; drop Excel files • Right-click: Copy • Ctrl+Shift+C: Copy all" 
+            <TextBlock Text="💡 Ctrl+Enter: Send • Click Cancel to stop • Drag &amp; drop Excel files • Right-click: Copy" 
                        FontSize="12" 
                        Foreground="#888888" 
                        Margin="0,0,20,0"/>
