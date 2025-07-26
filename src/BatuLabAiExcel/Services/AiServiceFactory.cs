@@ -32,6 +32,9 @@ public class AiServiceFactory : IAiServiceFactory
                 "claude" => _serviceProvider.GetRequiredService<ClaudeAiService>(),
                 "gemini" => _serviceProvider.GetRequiredService<GeminiAiService>(),
                 "groq" => _serviceProvider.GetRequiredService<GroqAiService>(),
+                "claude cli" or "claudecli" => _serviceProvider.GetRequiredService<ClaudeCliService>(),
+                "claude desktop" or "claudedesktop" => CreateDesktopService<ClaudeDesktopService>(),
+                "chatgpt desktop" or "chatgptdesktop" => CreateDesktopService<ChatGptDesktopService>(),
                 _ => GetDefaultAiService()
             };
         }
@@ -57,11 +60,18 @@ public class AiServiceFactory : IAiServiceFactory
 
     public bool IsProviderAvailable(string providerName)
     {
-        return providerName?.ToLowerInvariant() is "claude" or "gemini" or "groq";
+        return providerName?.ToLowerInvariant() is "claude" or "gemini" or "groq" or "claude cli" or "claudecli" or "claude desktop" or "claudedesktop" or "chatgpt desktop" or "chatgptdesktop";
     }
 
     public IEnumerable<string> GetAvailableProviders()
     {
-        return new[] { "Claude", "Gemini", "Groq" };
+        return new[] { "Claude", "Gemini", "Groq", "Claude CLI", "Claude Desktop", "ChatGPT Desktop" };
+    }
+
+    private IAiService CreateDesktopService<T>() where T : class, IDesktopAutomationService
+    {
+        var desktopService = _serviceProvider.GetRequiredService<T>();
+        return new DesktopAutomationAiService(desktopService, 
+            _serviceProvider.GetRequiredService<ILogger<DesktopAutomationAiService>>());
     }
 }

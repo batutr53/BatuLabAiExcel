@@ -25,7 +25,20 @@
       "WebFetch(domain:ai.google.dev)",
       "WebFetch(domain:console.groq.com)",
       "Bash(start BatuLabAiExcel.exe)",
-      "Bash(timeout:*)"
+      "Bash(timeout:*)",
+      "WebFetch(domain:claude.ai)",
+      "Bash(claude --version)",
+      "Bash(where claude)",
+      "Bash(claude --print \"Merhaba, nasılsın?\")",
+      "Bash(dotnet run:*)",
+      "Bash(dir:*)",
+      "Bash(claude \"Analyze the structure of PAYTALYA.xlsx and tell me what data it contains\")",
+      "Bash(claude --print --output-format json --mcp-config \"../mcp-config.json\" \"Tell me about the PAYTALYA.xlsx file structure\")",
+      "Bash(pip install:*)",
+      "Bash(py:*)",
+      "Bash(claude:*)",
+      "Bash(cp:*)",
+      "Bash(dotnet:*)"
     ],
     "deny": []
   }

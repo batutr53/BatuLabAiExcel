@@ -158,12 +158,16 @@
                 <TextBlock Text="🤖" FontSize="16" Margin="0,0,8,0" VerticalAlignment="Center"/>
                 <TextBlock Text="AI Provider:" FontWeight="SemiBold" Margin="0,0,8,0" VerticalAlignment="Center"/>
                 <ComboBox x:Name="AiProviderComboBox"
-                          MinWidth="120"
+                          MinWidth="150"
                           SelectedValue="{Binding SelectedAiProvider}"
                           SelectionChanged="AiProviderComboBox_SelectionChanged">
                     <ComboBoxItem Content="Claude" Tag="Claude"/>
                     <ComboBoxItem Content="Gemini" Tag="Gemini"/>
                     <ComboBoxItem Content="Groq" Tag="Groq"/>
+                    <Separator/>
+                    <ComboBoxItem Content="Claude CLI" Tag="Claude CLI"/>
+                    <ComboBoxItem Content="Claude Desktop" Tag="Claude Desktop"/>
+                    <ComboBoxItem Content="ChatGPT Desktop" Tag="ChatGPT Desktop"/>
                 </ComboBox>
                 <TextBlock Text="{Binding CurrentAiProviderStatus}" 
                            FontStyle="Italic" 

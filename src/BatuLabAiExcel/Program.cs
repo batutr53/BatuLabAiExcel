@@ -45,8 +45,10 @@ public static class Program
                 services.Configure<AppConfiguration.ClaudeSettings>(context.Configuration.GetSection("Claude"));
                 services.Configure<AppConfiguration.GeminiSettings>(context.Configuration.GetSection("Gemini"));
                 services.Configure<AppConfiguration.GroqSettings>(context.Configuration.GetSection("Groq"));
+                services.Configure<AppConfiguration.ClaudeCliSettings>(context.Configuration.GetSection("ClaudeCli"));
                 services.Configure<AppConfiguration.AiProviderSettings>(context.Configuration.GetSection("AiProvider"));
                 services.Configure<AppConfiguration.McpSettings>(context.Configuration.GetSection("Mcp"));
+                services.Configure<AppConfiguration.DesktopAutomationSettings>(context.Configuration.GetSection("DesktopAutomation"));
 
                 // HTTP Clients
                 services.AddHttpClient<IClaudeService, ClaudeService>();
@@ -57,6 +59,7 @@ public static class Program
                 services.AddSingleton<IClaudeService, ClaudeService>();
                 services.AddSingleton<IGeminiService, GeminiService>();
                 services.AddSingleton<IGroqService, GroqService>();
+                services.AddSingleton<ClaudeCliService>();
                 
                 // AI Provider Factory
                 services.AddSingleton<IAiServiceFactory, AiServiceFactory>();
@@ -64,6 +67,11 @@ public static class Program
                 services.AddSingleton<ClaudeAiService>();
                 services.AddSingleton<GeminiAiService>();
                 services.AddSingleton<GroqAiService>();
+
+                // Desktop Automation Services
+                services.AddSingleton<WindowsAutomationHelper>();
+                services.AddSingleton<ClaudeDesktopService>();
+                services.AddSingleton<ChatGptDesktopService>();
 
                 // MCP and Chat Services
                 services.AddSingleton<IChatOrchestrator, ChatOrchestrator>();

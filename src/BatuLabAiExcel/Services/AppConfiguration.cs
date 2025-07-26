@@ -99,7 +99,7 @@ public class AppConfiguration
         
         public bool IsValidProvider(string provider)
         {
-            return provider?.ToLowerInvariant() is "claude" or "gemini" or "groq";
+            return provider?.ToLowerInvariant() is "claude" or "gemini" or "groq" or "claude cli" or "claude desktop" or "chatgpt desktop";
         }
         
         public string GetValidProvider(string? provider = null)
@@ -144,5 +144,61 @@ public class AppConfiguration
         public string Title { get; set; } = "Office Ai - Batu Lab.";
         public string Version { get; set; } = "1.0.0";
         public bool EnableDebugMode { get; set; } = false;
+    }
+
+    public class DesktopAutomationSettings
+    {
+        public ClaudeDesktopSettings Claude { get; set; } = new();
+        public ChatGptDesktopSettings ChatGPT { get; set; } = new();
+        public GeneralDesktopSettings General { get; set; } = new();
+    }
+
+    public class ClaudeDesktopSettings
+    {
+        public bool Enabled { get; set; } = true;
+        public string ProcessName { get; set; } = "claude";
+        public string WindowTitle { get; set; } = "Claude";
+        public string InputSelector { get; set; } = "#message-input";
+        public string SendButtonSelector { get; set; } = "[aria-label='Send Message']";
+        public string ResponseSelector { get; set; } = ".conversation-item:last-child .message-content";
+        public int TimeoutSeconds { get; set; } = 30;
+        public int RetryCount { get; set; } = 3;
+        public string LaunchCommand { get; set; } = "claude://";
+        public string LaunchPath { get; set; } = "C:\\Users\\%USERNAME%\\AppData\\Local\\Claude\\Claude.exe";
+    }
+
+    public class ChatGptDesktopSettings
+    {
+        public bool Enabled { get; set; } = true;
+        public string ProcessName { get; set; } = "ChatGPT";
+        public string WindowTitle { get; set; } = "ChatGPT";
+        public string InputSelector { get; set; } = "#prompt-textarea";
+        public string SendButtonSelector { get; set; } = "[data-testid='send-button']";
+        public string ResponseSelector { get; set; } = "[data-message-author-role='assistant']:last-child .markdown";
+        public int TimeoutSeconds { get; set; } = 30;
+        public int RetryCount { get; set; } = 3;
+        public string LaunchCommand { get; set; } = "chatgpt://";
+        public string LaunchPath { get; set; } = "C:\\Users\\%USERNAME%\\AppData\\Local\\ChatGPT\\ChatGPT.exe";
+    }
+
+    public class GeneralDesktopSettings
+    {
+        public bool EnableAutoLaunch { get; set; } = true;
+        public int WaitForAppStartup { get; set; } = 5000;
+        public int MessageDelay { get; set; } = 1000;
+        public int ResponsePollInterval { get; set; } = 500;
+        public int MaxResponseWaitTime { get; set; } = 60000;
+    }
+
+    public class ClaudeCliSettings
+    {
+        public bool Enabled { get; set; } = true;
+        public string ExecutablePath { get; set; } = "claude";
+        public string WorkingDirectory { get; set; } = "./excel_files";
+        public int TimeoutSeconds { get; set; } = 120;
+        public string McpConfigPath { get; set; } = "./mcp-config.json";
+        public bool AutoInstall { get; set; } = true;
+        public string InstallCommand { get; set; } = "npm install -g @anthropic-ai/claude-code";
+        public string ExtraArgs { get; set; } = "--no-confirm --json-output";
     }
 }

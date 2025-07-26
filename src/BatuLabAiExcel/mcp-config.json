@@ -1,0 +1,14 @@
+{
+  "mcpServers": {
+    "excel_mcp_server": {
+      "command": "python",
+      "args": [
+        "-m",
+        "excel_mcp_server",
+        "stdio"
+      ],
+      "env": {},
+      "disabled": false
+    }
+  }
+}
