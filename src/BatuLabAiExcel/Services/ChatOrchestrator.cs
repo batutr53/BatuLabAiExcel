@@ -211,11 +211,19 @@ public class ChatOrchestrator : IChatOrchestrator
         {
             try
             {
+                var schema = ConvertToAiToolSchema(mcpTool.InputSchema);
+                
+                // Apply provider-specific filtering for Groq
+                if (_currentProvider == "Groq")
+                {
+                    schema = FilterToolSchemaForGroq(schema, mcpTool.Name);
+                }
+                
                 var aiTool = new AiTool
                 {
                     Name = mcpTool.Name,
                     Description = mcpTool.Description,
-                    Parameters = ConvertToAiToolSchema(mcpTool.InputSchema)
+                    Parameters = schema
                 };
                 
                 aiTools.Add(aiTool);
@@ -362,4 +370,73 @@ public class ChatOrchestrator : IChatOrchestrator
     }
 
     public string GetCurrentProvider() => _currentProvider;
+
+    private AiToolSchema FilterToolSchemaForGroq(AiToolSchema schema, string toolName)
+    {
+        // Groq has strict validation for object/array types in function parameters
+        // Remove problematic properties that cause validation errors
+        
+        var filteredSchema = new AiToolSchema
+        {
+            Type = schema.Type,
+            Required = schema.Required?.ToList()
+        };
+
+        if (schema.Properties != null)
+        {
+            filteredSchema.Properties = new Dictionary<string, AiToolProperty>();
+            
+            foreach (var property in schema.Properties)
+            {
+                var key = property.Key;
+                var value = property.Value;
+                
+                // Skip problematic object/array properties for specific tools
+                if (ShouldSkipPropertyForGroq(toolName, key, value.Type))
+                {
+                    _logger.LogDebug("Skipping property {Property} for tool {Tool} (Groq compatibility)", key, toolName);
+                    
+                    // Remove from required list if it was required
+                    filteredSchema.Required?.Remove(key);
+                    continue;
+                }
+                
+                // Convert object/array types to string for Groq compatibility
+                var filteredProperty = new AiToolProperty
+                {
+                    Type = ConvertTypeForGroq(value.Type),
+                    Description = value.Description,
+                    Enum = value.Enum,
+                    Items = value.Items
+                };
+                
+                filteredSchema.Properties[key] = filteredProperty;
+            }
+        }
+        
+        return filteredSchema;
+    }
+
+    private bool ShouldSkipPropertyForGroq(string toolName, string propertyName, string propertyType)
+    {
+        // Skip specific problematic properties that Groq can't handle
+        if (toolName == "format_range")
+        {
+            return propertyName is "conditional_format" or "protection" && propertyType == "object";
+        }
+        
+        // Add more tool-specific filters as needed
+        return false;
+    }
+
+    private string ConvertTypeForGroq(string type)
+    {
+        // Convert complex types to string for Groq compatibility
+        return type switch
+        {
+            "object" => "string",
+            "array" => "string",
+            _ => type
+        };
+    }
 }

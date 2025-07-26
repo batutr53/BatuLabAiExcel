@@ -7,6 +7,7 @@ public class AppConfiguration
 {
     public ClaudeSettings Claude { get; set; } = new();
     public GeminiSettings Gemini { get; set; } = new();
+    public GroqSettings Groq { get; set; } = new();
     public AiProviderSettings AiProvider { get; set; } = new();
     public McpSettings Mcp { get; set; } = new();
     public LoggingSettings Logging { get; set; } = new();
@@ -65,6 +66,32 @@ public class AppConfiguration
         }
     }
 
+    public class GroqSettings
+    {
+        public string ApiKey { get; set; } = string.Empty;
+        public string Model { get; set; } = "llama-3.3-70b-versatile";
+        public string BaseUrl { get; set; } = "https://api.groq.com/openai/v1";
+        public int MaxTokens { get; set; } = 2000;
+        public int TimeoutSeconds { get; set; } = 120;
+        public int RetryCount { get; set; } = 3;
+        public int RetryDelaySeconds { get; set; } = 2;
+        public int RequestDelayMs { get; set; } = 500;
+        public double Temperature { get; set; } = 0.1;
+        public double TopP { get; set; } = 0.9;
+        public int TopK { get; set; } = 5;
+
+        /// <summary>
+        /// Get masked API key for logging
+        /// </summary>
+        public string GetMaskedApiKey()
+        {
+            if (string.IsNullOrEmpty(ApiKey) || ApiKey.Length < 8)
+                return "***";
+            
+            return $"{ApiKey[..4]}***{ApiKey[^4..]}";
+        }
+    }
+
     public class AiProviderSettings
     {
         public string DefaultProvider { get; set; } = "Claude";
@@ -72,7 +99,7 @@ public class AppConfiguration
         
         public bool IsValidProvider(string provider)
         {
-            return provider?.ToLowerInvariant() is "claude" or "gemini";
+            return provider?.ToLowerInvariant() is "claude" or "gemini" or "groq";
         }
         
         public string GetValidProvider(string? provider = null)

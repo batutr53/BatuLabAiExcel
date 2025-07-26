@@ -31,6 +31,7 @@ public class AiServiceFactory : IAiServiceFactory
             {
                 "claude" => _serviceProvider.GetRequiredService<ClaudeAiService>(),
                 "gemini" => _serviceProvider.GetRequiredService<GeminiAiService>(),
+                "groq" => _serviceProvider.GetRequiredService<GroqAiService>(),
                 _ => GetDefaultAiService()
             };
         }
@@ -56,11 +57,11 @@ public class AiServiceFactory : IAiServiceFactory
 
     public bool IsProviderAvailable(string providerName)
     {
-        return providerName?.ToLowerInvariant() is "claude" or "gemini";
+        return providerName?.ToLowerInvariant() is "claude" or "gemini" or "groq";
     }
 
     public IEnumerable<string> GetAvailableProviders()
     {
-        return new[] { "Claude", "Gemini" };
+        return new[] { "Claude", "Gemini", "Groq" };
     }
 }

@@ -163,6 +163,7 @@
                           SelectionChanged="AiProviderComboBox_SelectionChanged">
                     <ComboBoxItem Content="Claude" Tag="Claude"/>
                     <ComboBoxItem Content="Gemini" Tag="Gemini"/>
+                    <ComboBoxItem Content="Groq" Tag="Groq"/>
                 </ComboBox>
                 <TextBlock Text="{Binding CurrentAiProviderStatus}" 
                            FontStyle="Italic" 
