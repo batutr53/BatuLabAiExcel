@@ -38,7 +38,11 @@
       "Bash(py:*)",
       "Bash(claude:*)",
       "Bash(cp:*)",
-      "Bash(dotnet:*)"
+      "Bash(dotnet:*)",
+      "Bash(setx:*)",
+      "Bash(refreshenv)",
+      "Bash(\"C:\\Users\\batua\\.dotnet\\tools\\dotnet-ef.exe\" migrations add InitialCreate)",
+      "Bash(\"C:\\Users\\batua\\.dotnet\\tools\\dotnet-ef.exe\" database update)"
     ],
     "deny": []
   }

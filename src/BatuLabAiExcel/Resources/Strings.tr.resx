@@ -1,0 +1,259 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  
+  <!-- Login Window -->
+  <data name="Login_Title" xml:space="preserve">
+    <value>Office AI - Giriş</value>
+  </data>
+  <data name="Login_WelcomeBack" xml:space="preserve">
+    <value>Tekrar Hoş Geldiniz</value>
+  </data>
+  <data name="Login_SignInToContinue" xml:space="preserve">
+    <value>Office AI'yı kullanmaya devam etmek için giriş yapın</value>
+  </data>
+  <data name="Login_EmailAddress" xml:space="preserve">
+    <value>E-posta Adresi</value>
+  </data>
+  <data name="Login_Password" xml:space="preserve">
+    <value>Şifre</value>
+  </data>
+  <data name="Login_RememberMe" xml:space="preserve">
+    <value>Beni hatırla</value>
+  </data>
+  <data name="Login_SignIn" xml:space="preserve">
+    <value>Giriş Yap</value>
+  </data>
+  <data name="Login_SigningIn" xml:space="preserve">
+    <value>Giriş yapılıyor...</value>
+  </data>
+  <data name="Login_DontHaveAccount" xml:space="preserve">
+    <value>Hesabınız yok mu? </value>
+  </data>
+  <data name="Login_SignUp" xml:space="preserve">
+    <value>Kayıt Ol</value>
+  </data>
+  <data name="Login_ValidationError" xml:space="preserve">
+    <value>Lütfen e-posta ve şifre alanlarını doldurun.</value>
+  </data>
+  
+  <!-- Register Window -->
+  <data name="Register_Title" xml:space="preserve">
+    <value>Office AI - Kayıt</value>
+  </data>
+  <data name="Register_CreateAccount" xml:space="preserve">
+    <value>Hesap Oluştur</value>
+  </data>
+  <data name="Register_JoinOfficeAI" xml:space="preserve">
+    <value>Office AI'ya katılın ve AI gücünü keşfedin</value>
+  </data>
+  <data name="Register_FirstName" xml:space="preserve">
+    <value>Ad</value>
+  </data>
+  <data name="Register_LastName" xml:space="preserve">
+    <value>Soyad</value>
+  </data>
+  <data name="Register_EmailAddress" xml:space="preserve">
+    <value>E-posta Adresi</value>
+  </data>
+  <data name="Register_Password" xml:space="preserve">
+    <value>Şifre</value>
+  </data>
+  <data name="Register_ConfirmPassword" xml:space="preserve">
+    <value>Şifreyi Onayla</value>
+  </data>
+  <data name="Register_AcceptTerms" xml:space="preserve">
+    <value>Kabul ediyorum </value>
+  </data>
+  <data name="Register_TermsOfService" xml:space="preserve">
+    <value>Hizmet Şartları</value>
+  </data>
+  <data name="Register_And" xml:space="preserve">
+    <value> ve </value>
+  </data>
+  <data name="Register_PrivacyPolicy" xml:space="preserve">
+    <value>Gizlilik Politikası</value>
+  </data>
+  <data name="Register_CreateAccountStartTrial" xml:space="preserve">
+    <value>Hesap Oluştur ve Deneme Başlat</value>
+  </data>
+  <data name="Register_AlreadyHaveAccount" xml:space="preserve">
+    <value>Zaten hesabınız var mı? </value>
+  </data>
+  <data name="Register_SignIn" xml:space="preserve">
+    <value>Giriş Yap</value>
+  </data>
+  <data name="Register_ValidationError" xml:space="preserve">
+    <value>Lütfen tüm gerekli alanları doldurun ve şartları kabul edin.</value>
+  </data>
+  
+  <!-- Main Window -->
+  <data name="Main_Title" xml:space="preserve">
+    <value>Office Ai - Batu Lab.</value>
+  </data>
+  <data name="Main_BrowseFiles" xml:space="preserve">
+    <value>Dosya Seç</value>
+  </data>
+  <data name="Main_OpenFolder" xml:space="preserve">
+    <value>Klasör Aç</value>
+  </data>
+  <data name="Main_CurrentFile" xml:space="preserve">
+    <value>Dosya seçilmedi</value>
+  </data>
+  <data name="Main_SendMessage" xml:space="preserve">
+    <value>Mesaj gönderin...</value>
+  </data>
+  <data name="Main_Send" xml:space="preserve">
+    <value>Gönder</value>
+  </data>
+  <data name="Main_Cancel" xml:space="preserve">
+    <value>İptal</value>
+  </data>
+  <data name="Main_CopyAllMessages" xml:space="preserve">
+    <value>Tüm Mesajları Kopyala</value>
+  </data>
+  <data name="Main_ShowSubscription" xml:space="preserve">
+    <value>Abonelik Yönetimi</value>
+  </data>
+  <data name="Main_Logout" xml:space="preserve">
+    <value>Çıkış Yap</value>
+  </data>
+  
+  <!-- Welcome Messages -->
+  <data name="Welcome_Message" xml:space="preserve">
+    <value>Office Ai - Batu Lab.'e hoş geldiniz! 🎉
+
+Excel dosyalarıyla AI kullanarak çalışmanıza yardımcı olabilirim. Önce yukarıdan bir Excel dosyası seçin, sonra benden şunları isteyebilirsiniz:
+• Excel sayfalarından veri okuma
+• Belirli hücrelere veya aralıklara veri yazma
+• Hücreleri ve aralıkları biçimlendirme
+• Grafikler ve pivot tablolar oluşturma
+• Formüller ve hesaplamalar uygulama
+
+🛡️ VERİ KORUMA: Siz özellikle istemediğiniz sürece mevcut verilerinizi ASLA değiştirmem, silmem veya yeniden düzenlemem. Sadece istediğiniz işlemleri yapar ve mevcut çalışmanızı korururum.
+
+Örnek: "Sheet1!A1:C10 aralığından verileri oku ve bana özetle."</value>
+  </data>
+  <data name="Main_FileLoaded" xml:space="preserve">
+    <value>✅ Excel dosyası yüklendi: {0}
+📁 Yol: {1}
+
+🛡️ KORUMA MODU: Mevcut verileriniz güvende! Sadece istediğiniz işlemleri yaparım. Siz açıkça istemediğiniz sürece mevcut verilerinizi değiştirmem, silmem veya yeniden düzenlemem.
+
+Artık bu dosyayla çalışmamı isteyebilirsiniz!</value>
+  </data>
+  <data name="Main_FileDropped" xml:space="preserve">
+    <value>📁 Excel dosyası bırakıldı: {0}
+🛡️ KORUMA MODU: Mevcut verileriniz güvende! Sadece istediğiniz işlemleri yaparım. Dosya yüklendi ve AI işlemi için hazır!</value>
+  </data>
+  <data name="Main_FileCopied" xml:space="preserve">
+    <value>📋 Dosya güvenli işleme için çalışma dizinine kopyalandı.</value>
+  </data>
+  <data name="Main_FolderOpened" xml:space="preserve">
+    <value>📂 Çalışma klasörü açıldı: {0}
+
+Excel dosyalarınızı buraya kopyalayabilir, sonra Dosya Seç butonunu kullanarak seçebilirsiniz.</value>
+  </data>
+  <data name="Main_AllMessagesCopied" xml:space="preserve">
+    <value>📋 Tüm mesajlar panoya kopyalandı!</value>
+  </data>
+  
+  <!-- Subscription Window -->
+  <data name="Subscription_Title" xml:space="preserve">
+    <value>Office AI - Abonelik Planları</value>
+  </data>
+  <data name="Subscription_Header" xml:space="preserve">
+    <value>Office AI - Abonelik Planları</value>
+  </data>
+  <data name="Subscription_ChoosePlan" xml:space="preserve">
+    <value>İhtiyaçlarınıza uygun planı seçin</value>
+  </data>
+  
+  <!-- Common -->
+  <data name="Common_Close" xml:space="preserve">
+    <value>Kapat</value>
+  </data>
+  <data name="Common_Error" xml:space="preserve">
+    <value>Hata</value>
+  </data>
+  <data name="Common_Warning" xml:space="preserve">
+    <value>Uyarı</value>
+  </data>
+  <data name="Common_Information" xml:space="preserve">
+    <value>Bilgi</value>
+  </data>
+  <data name="Common_OK" xml:space="preserve">
+    <value>Tamam</value>
+  </data>
+  <data name="Common_Cancel" xml:space="preserve">
+    <value>İptal</value>
+  </data>
+  <data name="Common_CopyRights" xml:space="preserve">
+    <value>© 2025 Batu Lab. Tüm hakları saklıdır.</value>
+  </data>
+  
+  <!-- Language -->
+  <data name="Language_Turkish" xml:space="preserve">
+    <value>Türkçe</value>
+  </data>
+  <data name="Language_English" xml:space="preserve">
+    <value>English</value>
+  </data>
+</root>

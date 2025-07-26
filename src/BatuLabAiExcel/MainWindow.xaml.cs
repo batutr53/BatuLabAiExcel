@@ -5,6 +5,7 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Globalization;
 using System.Windows.Data;
+using Microsoft.Extensions.DependencyInjection;
 using BatuLabAiExcel.ViewModels;
 using BatuLabAiExcel.Models;
 
@@ -18,6 +19,12 @@ public partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
+        
+        // Set DataContext from DI
+        var serviceProvider = ((App)Application.Current).ServiceProvider;
+        var viewModel = serviceProvider.GetRequiredService<MainViewModel>();
+        DataContext = viewModel;
+        
         DataContextChanged += OnDataContextChanged;
     }
 
@@ -83,6 +90,7 @@ public partial class MainWindow : Window
                     
                     viewModel.Messages.Add(Models.ChatMessage.CreateSystemMessage(
                         $"📁 Excel file dropped: {Path.GetFileName(excelFile)}\n" +
+                        $"🛡️ PROTECTION MODE: Your existing data is safe! I will only perform the specific actions you request. " +
                         $"File has been loaded and is ready for AI processing!"));
                     
                     ScrollToBottom();

@@ -1,0 +1,318 @@
+<Window x:Class="BatuLabAiExcel.Views.LoginWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:local="clr-namespace:BatuLabAiExcel.Views"
+        Title="Office AI - Login" 
+        Icon="/icon.png"
+        Height="695" 
+        Width="450" 
+        WindowStartupLocation="CenterScreen"
+        WindowStyle="None"
+        AllowsTransparency="True"
+        Background="Transparent"
+        ResizeMode="NoResize">
+    
+    <Window.Resources>
+        <!-- Dark Night Theme Color Palette -->
+        <SolidColorBrush x:Key="PrimaryBrush" Color="#8B5CF6"/>
+        <SolidColorBrush x:Key="PrimaryHoverBrush" Color="#7C3AED"/>
+        <SolidColorBrush x:Key="SurfaceBrush" Color="#0F172A"/>
+        <SolidColorBrush x:Key="CardBrush" Color="#1E293B"/>
+        <SolidColorBrush x:Key="CardHoverBrush" Color="#334155"/>
+        <SolidColorBrush x:Key="TextPrimaryBrush" Color="#F1F5F9"/>
+        <SolidColorBrush x:Key="TextSecondaryBrush" Color="#94A3B8"/>
+        <SolidColorBrush x:Key="BorderBrush" Color="#475569"/>
+        <SolidColorBrush x:Key="DangerBrush" Color="#F87171"/>
+        <SolidColorBrush x:Key="ShadowBrush" Color="#000000"/>
+        <SolidColorBrush x:Key="BackgroundBrush" Color="#020617"/>
+        <SolidColorBrush x:Key="AccentBrush" Color="#3B82F6"/>
+        
+        <!-- Modern Button Style -->
+        <Style x:Key="ModernButtonStyle" TargetType="Button">
+            <Setter Property="Background" Value="{StaticResource PrimaryBrush}"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Height" Value="48"/>
+            <Setter Property="Padding" Value="24,12"/>
+            <Setter Property="Margin" Value="0,8"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}"
+                                CornerRadius="8"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                BorderBrush="{TemplateBinding BorderBrush}">
+                            <ContentPresenter HorizontalAlignment="Center" 
+                                            VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Background" Value="{StaticResource PrimaryHoverBrush}"/>
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter Property="Background" Value="{StaticResource BorderBrush}"/>
+                                <Setter Property="Foreground" Value="{StaticResource TextSecondaryBrush}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        
+        <!-- Secondary Button Style -->
+        <Style x:Key="SecondaryButtonStyle" TargetType="Button" BasedOn="{StaticResource ModernButtonStyle}">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Foreground" Value="{StaticResource PrimaryBrush}"/>
+            <Setter Property="BorderThickness" Value="2"/>
+            <Setter Property="BorderBrush" Value="{StaticResource PrimaryBrush}"/>
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="{StaticResource PrimaryBrush}"/>
+                    <Setter Property="Foreground" Value="White"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+        
+        <!-- Modern TextBox Style -->
+        <Style x:Key="ModernTextBoxStyle" TargetType="TextBox">
+            <Setter Property="Background" Value="{StaticResource CardBrush}"/>
+            <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}"/>
+            <Setter Property="BorderThickness" Value="2"/>
+            <Setter Property="BorderBrush" Value="{StaticResource BorderBrush}"/>
+            <Setter Property="Padding" Value="16,12"/>
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="Height" Value="48"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="TextBox">
+                        <Border Background="{TemplateBinding Background}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                CornerRadius="8">
+                            <ScrollViewer x:Name="PART_ContentHost" 
+                                        Margin="{TemplateBinding Padding}"
+                                        VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsFocused" Value="True">
+                                <Setter Property="BorderBrush" Value="{StaticResource PrimaryBrush}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        
+        <!-- Modern PasswordBox Style -->
+        <Style x:Key="ModernPasswordBoxStyle" TargetType="PasswordBox">
+            <Setter Property="Background" Value="{StaticResource CardBrush}"/>
+            <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}"/>
+            <Setter Property="BorderThickness" Value="2"/>
+            <Setter Property="BorderBrush" Value="{StaticResource BorderBrush}"/>
+            <Setter Property="Padding" Value="16,12"/>
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="Height" Value="48"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="PasswordBox">
+                        <Border Background="{TemplateBinding Background}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                CornerRadius="8">
+                            <ScrollViewer x:Name="PART_ContentHost" 
+                                        Margin="{TemplateBinding Padding}"
+                                        VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsFocused" Value="True">
+                                <Setter Property="BorderBrush" Value="{StaticResource PrimaryBrush}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Window.Resources>
+    
+    <!-- Main Container -->
+    <Border Background="{StaticResource BackgroundBrush}" 
+            CornerRadius="12"
+            Margin="10">
+        <Border.Effect>
+            <DropShadowEffect Color="#000000" BlurRadius="20" ShadowDepth="5" Opacity="0.3"/>
+        </Border.Effect>
+        
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/> <!-- Header -->
+                <RowDefinition Height="*"/>    <!-- Content -->
+                <RowDefinition Height="Auto"/> <!-- Footer -->
+            </Grid.RowDefinitions>
+            
+            <!-- Header -->
+            <Border Grid.Row="0" 
+                    Background="{StaticResource PrimaryBrush}"
+                    CornerRadius="12,12,0,0"
+                    Height="60"
+                    MouseLeftButtonDown="Header_MouseLeftButtonDown">
+                <Grid>
+                    <StackPanel Orientation="Horizontal" 
+                                VerticalAlignment="Center" 
+                                HorizontalAlignment="Center">
+                        <Image Source="/icon.png" 
+                               Width="24" 
+                               Height="24" 
+                               Margin="0,0,10,0"/>
+                        <TextBlock Text="Office AI - Batu Lab" 
+                                   Foreground="White" 
+                                   FontWeight="Bold" 
+                                   FontSize="16"
+                                   VerticalAlignment="Center"/>
+                    </StackPanel>
+                    
+                    <Button Content="✕" 
+                            HorizontalAlignment="Right"
+                            VerticalAlignment="Top"
+                            Width="40" 
+                            Height="40" 
+                            Background="Transparent" 
+                            Foreground="White" 
+                            BorderThickness="0"
+                            FontSize="16"
+                            Click="CloseButton_Click"
+                            Style="{x:Null}">
+                        <Button.Template>
+                            <ControlTemplate TargetType="Button">
+                                <Border Background="{TemplateBinding Background}" CornerRadius="0,12,0,0">
+                                    <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                </Border>
+                                <ControlTemplate.Triggers>
+                                    <Trigger Property="IsMouseOver" Value="True">
+                                        <Setter Property="Background" Value="{StaticResource DangerBrush}"/>
+                                    </Trigger>
+                                </ControlTemplate.Triggers>
+                            </ControlTemplate>
+                        </Button.Template>
+                    </Button>
+                </Grid>
+            </Border>
+            
+            <!-- Content -->
+            <ScrollViewer Grid.Row="1" 
+                          VerticalScrollBarVisibility="Auto"
+                          Padding="40,30">
+                <StackPanel MaxWidth="300">
+                    <!-- Welcome Text -->
+                    <TextBlock Text="Welcome Back" 
+                               FontSize="28" 
+                               FontWeight="Bold" 
+                               Foreground="{StaticResource TextPrimaryBrush}"
+                               HorizontalAlignment="Center"
+                               Margin="0,0,0,10"/>
+                    
+                    <TextBlock Text="Sign in to continue using Office AI" 
+                               FontSize="14" 
+                               Foreground="{StaticResource TextSecondaryBrush}"
+                               HorizontalAlignment="Center"
+                               Margin="0,0,0,30"/>
+                    
+                    <!-- Email Input -->
+                    <TextBlock Text="Email Address" 
+                               Foreground="{StaticResource TextPrimaryBrush}"
+                               FontWeight="Medium"
+                               Margin="0,0,0,8"/>
+                    <TextBox x:Name="EmailTextBox"
+                             Text="{Binding Email, UpdateSourceTrigger=PropertyChanged}"
+                             Background="{StaticResource CardBrush}"
+                             Foreground="{StaticResource TextPrimaryBrush}"
+                             BorderThickness="2"
+                             BorderBrush="{StaticResource BorderBrush}"
+                             Padding="16,12"
+                             FontSize="14"
+                             Height="48"
+                             Margin="0,0,0,20"/>
+                    
+                    <!-- Password Input -->
+                    <TextBlock Text="Password" 
+                               Foreground="{StaticResource TextPrimaryBrush}"
+                               FontWeight="Medium"
+                               Margin="0,0,0,8"/>
+                    <PasswordBox x:Name="PasswordBox"
+                                 Background="{StaticResource CardBrush}"
+                                 Foreground="{StaticResource TextPrimaryBrush}"
+                                 BorderThickness="2"
+                                 BorderBrush="{StaticResource BorderBrush}"
+                                 Padding="16,12"
+                                 FontSize="14"
+                                 Height="48"
+                                 Margin="0,0,0,20"
+                                 PasswordChanged="PasswordBox_PasswordChanged"/>
+                    
+                    <!-- Remember Me -->
+                    <CheckBox IsChecked="{Binding RememberMe}"
+                              Foreground="{StaticResource TextPrimaryBrush}"
+                              Content="Remember me"
+                              Margin="0,0,0,25"/>
+                    
+                    <!-- Error Message -->
+                    <Border x:Name="ErrorBorder"
+                            Background="{StaticResource DangerBrush}"
+                            CornerRadius="8"
+                            Padding="12"
+                            Margin="0,0,0,20"
+                            Visibility="Collapsed">
+                        <TextBlock Text="{Binding ErrorMessage}"
+                                   Foreground="White"
+                                   FontWeight="Medium"
+                                   TextWrapping="Wrap"/>
+                    </Border>
+                    
+                    <!-- Login Button -->
+                    <Button x:Name="LoginButton"
+                            Content="Sign In"
+                            Style="{StaticResource ModernButtonStyle}"
+                            Click="LoginButton_Click"/>
+                    
+                    <!-- Loading Indicator -->
+                    <StackPanel x:Name="LoadingPanel"
+                                Orientation="Horizontal" 
+                                HorizontalAlignment="Center"
+                                Margin="0,15,0,0"
+                                Visibility="Collapsed">
+                        <TextBlock Text="⏳" Margin="0,0,8,0"/>
+                        <TextBlock Text="Signing in..." 
+                                   Foreground="{StaticResource TextSecondaryBrush}"/>
+                    </StackPanel>
+                    
+                    <!-- Register Link -->
+                    <StackPanel Orientation="Horizontal" 
+                                HorizontalAlignment="Center"
+                                Margin="0,25,0,0">
+                        <TextBlock Text="Don't have an account? " 
+                                   Foreground="{StaticResource TextSecondaryBrush}"/>
+                        <Button Content="Sign Up"
+                                Click="RegisterButton_Click"
+                                Style="{StaticResource SecondaryButtonStyle}"
+                                Padding="16,8"
+                                Height="Auto"
+                                Margin="5,0,0,0"/>
+                    </StackPanel>
+                </StackPanel>
+            </ScrollViewer>
+            
+            <!-- Footer -->
+            <Border Grid.Row="2" 
+                    Background="{StaticResource SurfaceBrush}"
+                    CornerRadius="0,0,12,12"
+                    Padding="20,15">
+                <TextBlock Text="© 2025 Batu Lab. All rights reserved." 
+                           Foreground="{StaticResource TextSecondaryBrush}"
+                           FontSize="12"
+                           HorizontalAlignment="Center"/>
+            </Border>
+        </Grid>
+    </Border>
+</Window>

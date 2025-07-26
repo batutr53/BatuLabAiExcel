@@ -8,16 +8,20 @@ using System.Windows;
 using Microsoft.Extensions.Logging;
 using Microsoft.Win32;
 using BatuLabAiExcel.Models;
+using BatuLabAiExcel.Models.DTOs;
 using BatuLabAiExcel.Services;
+using BatuLabAiExcel.Views;
 
 namespace BatuLabAiExcel.ViewModels;
 
 /// <summary>
-/// Main window view model
+/// Main window view model with license management
 /// </summary>
 public partial class MainViewModel : ViewModelBase
 {
     private readonly IChatOrchestrator _chatOrchestrator;
+    private readonly IAuthenticationService _authService;
+    private readonly ILicenseService _licenseService;
     private readonly ILogger<MainViewModel> _logger;
     private CancellationTokenSource? _currentOperationCts;
 
@@ -39,12 +43,33 @@ public partial class MainViewModel : ViewModelBase
     [ObservableProperty]
     private string _currentFilePath = string.Empty;
 
+    [ObservableProperty]
+    private UserInfo? _currentUser;
+
+    [ObservableProperty]
+    private LicenseInfo? _currentLicense;
+
+    [ObservableProperty]
+    private string _licenseStatusText = string.Empty;
+
     public event Action? RequestScrollToBottom;
 
-    public MainViewModel(IChatOrchestrator chatOrchestrator, ILogger<MainViewModel> logger)
+    public MainViewModel(
+        IChatOrchestrator chatOrchestrator, 
+        IAuthenticationService authService,
+        ILicenseService licenseService,
+        ILogger<MainViewModel> logger)
     {
         _chatOrchestrator = chatOrchestrator;
+        _authService = authService;
+        _licenseService = licenseService;
         _logger = logger;
+
+        // Subscribe to authentication changes
+        _authService.AuthenticationStateChanged += OnAuthenticationStateChanged;
+
+        // Initialize user info
+        _ = Task.Run(async () => await InitializeUserInfoAsync());
 
         // Add welcome message
         Messages.Add(ChatMessage.CreateSystemMessage(
@@ -55,6 +80,8 @@ public partial class MainViewModel : ViewModelBase
             "• Format cells and ranges\n" +
             "• Create charts and pivot tables\n" +
             "• Apply formulas and calculations\n\n" +
+            "🛡️ DATA PROTECTION: I will NEVER modify, delete, or rearrange your existing data unless you specifically ask me to. " +
+            "I only perform the exact actions you request and preserve all your existing work.\n\n" +
             "Example: \"Read data from Sheet1!A1:C10 and summarize it for me.\""));
     }
 
@@ -88,6 +115,8 @@ public partial class MainViewModel : ViewModelBase
                 Messages.Add(ChatMessage.CreateSystemMessage(
                     $"✅ Excel file loaded: {Path.GetFileName(filePath)}\n" +
                     $"📁 Path: {filePath}\n\n" +
+                    "🛡️ PROTECTION MODE: Your existing data is safe! I will only perform the specific actions you request. " +
+                    "I won't modify, delete, or rearrange your existing data unless you explicitly ask me to.\n\n" +
                     "You can now ask me to work with this file!"));
                 
                 RequestScrollToBottom?.Invoke();
@@ -228,16 +257,29 @@ public partial class MainViewModel : ViewModelBase
 
         // Cancel any existing operation
         _currentOperationCts?.Cancel();
-        _currentOperationCts = new CancellationTokenSource(TimeSpan.FromMinutes(5)); // 5 minute timeout
+        _currentOperationCts = new CancellationTokenSource(TimeSpan.FromMinutes(10)); // 10 minute timeout
 
         try
         {
             _logger.LogInformation("Processing user message: {Message}", userMessage);
 
-            // Include current file information in the context
+            // Include current file information in the context with Excel protection directives
             var contextualMessage = string.IsNullOrEmpty(CurrentFilePath) 
                 ? $"No Excel file is currently selected. User message: {userMessage}"
-                : $"Current Excel file: {CurrentFileName} (path: {CurrentFilePath}). User message: {userMessage}";
+                : $@"Current Excel file: {CurrentFileName} (path: {CurrentFilePath}).
+
+CRITICAL EXCEL PROTECTION RULES:
+1. NEVER delete or clear existing data unless explicitly requested by the user
+2. NEVER modify existing cell formatting unless explicitly requested
+3. NEVER change existing formulas unless explicitly requested  
+4. NEVER rearrange or move existing data unless explicitly requested
+5. When reading data, use READ-ONLY operations
+6. When adding new data, use APPEND operations or write to empty cells only
+7. Always preserve existing worksheets, charts, and pivot tables
+8. Only perform the specific action requested by the user
+9. If unclear about what to modify, ASK the user for clarification first
+
+User message: {userMessage}";
 
             // Update status and run processing on background thread
             await System.Windows.Application.Current.Dispatcher.InvokeAsync(() =>
@@ -369,5 +411,107 @@ public partial class MainViewModel : ViewModelBase
             _logger.LogError(ex, "Error changing AI provider to {Provider}", provider);
             CurrentAiProviderStatus = "Error switching provider";
         }
+    }
+
+    [RelayCommand]
+    private void ShowSubscriptionManager()
+    {
+        try
+        {
+            var subscriptionWindow = new SubscriptionWindow();
+            subscriptionWindow.Show();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error opening subscription manager");
+            Messages.Add(ChatMessage.CreateSystemMessage($"❌ Error opening subscription manager: {ex.Message}"));
+            RequestScrollToBottom?.Invoke();
+        }
+    }
+
+    [RelayCommand]
+    private async Task LogoutAsync()
+    {
+        try
+        {
+            await _authService.LogoutAsync();
+            _logger.LogInformation("User logged out successfully");
+            
+            // Close main window and show login
+            var loginWindow = new LoginWindow();
+            loginWindow.Show();
+            
+            Application.Current.MainWindow?.Close();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error during logout");
+            Messages.Add(ChatMessage.CreateSystemMessage($"❌ Error during logout: {ex.Message}"));
+            RequestScrollToBottom?.Invoke();
+        }
+    }
+
+    private async Task InitializeUserInfoAsync()
+    {
+        try
+        {
+            CurrentUser = await _authService.GetCurrentUserAsync();
+            
+            if (CurrentUser != null)
+            {
+                var validationResult = await _licenseService.ValidateLicenseAsync(CurrentUser.Id);
+                if (validationResult.IsValid && validationResult.License != null)
+                {
+                    CurrentLicense = validationResult.License;
+                    UpdateLicenseStatusText();
+                }
+                else
+                {
+                    LicenseStatusText = "No active license";
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error initializing user info");
+        }
+    }
+
+    private void OnAuthenticationStateChanged(object? sender, bool isAuthenticated)
+    {
+        _ = Task.Run(async () =>
+        {
+            if (isAuthenticated)
+            {
+                await InitializeUserInfoAsync();
+            }
+            else
+            {
+                CurrentUser = null;
+                CurrentLicense = null;
+                LicenseStatusText = string.Empty;
+            }
+        });
+    }
+
+    private void UpdateLicenseStatusText()
+    {
+        if (CurrentLicense == null)
+        {
+            LicenseStatusText = "No license";
+            return;
+        }
+
+        var statusText = CurrentLicense.TypeDisplayName;
+        
+        if (CurrentLicense.Type != Models.Entities.LicenseType.Lifetime)
+        {
+            var days = CurrentLicense.RemainingDays;
+            var timeText = days > 1 ? $"{days} days" : 
+                          days == 1 ? "1 day" : "Expired";
+            statusText += $" - {timeText} remaining";
+        }
+        
+        LicenseStatusText = statusText;
     }
 }

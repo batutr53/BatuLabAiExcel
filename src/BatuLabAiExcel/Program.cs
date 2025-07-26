@@ -2,12 +2,15 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Microsoft.EntityFrameworkCore;
 using Serilog;
 using System.Windows;
 using System.Net.Http;
 using BatuLabAiExcel.Services;
 using BatuLabAiExcel.ViewModels;
 using BatuLabAiExcel.Infrastructure;
+using BatuLabAiExcel.Data;
+using BatuLabAiExcel.Views;
 
 namespace BatuLabAiExcel;
 
@@ -50,6 +53,20 @@ public static class Program
                 services.Configure<AppConfiguration.McpSettings>(context.Configuration.GetSection("Mcp"));
                 services.Configure<AppConfiguration.DesktopAutomationSettings>(context.Configuration.GetSection("DesktopAutomation"));
 
+                // Database
+                var connectionString = context.Configuration.GetConnectionString("DefaultConnection") ?? 
+                                      context.Configuration.GetSection("Database:ConnectionString").Value ?? 
+                                      "Host=localhost;Database=office_ai_batulabdb;Username=office_ai_user;Password=your_secure_password";
+                                      
+                services.AddDbContext<AppDbContext>(options =>
+                    options.UseNpgsql(connectionString));
+
+                // Authentication & Security Services
+                services.AddScoped<IAuthenticationService, AuthenticationService>();
+                services.AddScoped<ILicenseService, LicenseService>();
+                services.AddScoped<IPaymentService, PaymentService>();
+                services.AddSingleton<ISecureStorageService, SecureStorageService>();
+
                 // HTTP Clients
                 services.AddHttpClient<IClaudeService, ClaudeService>();
                 services.AddHttpClient<IGeminiService, GeminiService>();
@@ -79,6 +96,15 @@ public static class Program
                 
                 // ViewModels
                 services.AddTransient<MainViewModel>();
+                services.AddTransient<LoginViewModel>();
+                services.AddTransient<RegisterViewModel>();
+                services.AddTransient<SubscriptionViewModel>();
+                
+                // Windows
+                services.AddTransient<MainWindow>();
+                services.AddTransient<LoginWindow>();
+                services.AddTransient<RegisterWindow>();
+                services.AddTransient<SubscriptionWindow>();
                 
                 // Infrastructure
                 services.AddSingleton<ProcessHelper>();

@@ -3,6 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:local="clr-namespace:BatuLabAiExcel"
         Title="Office Ai - Batu Lab." 
+        Icon="icon.png"
         Height="600" 
         Width="900" 
         MinHeight="400" 
@@ -338,12 +339,10 @@
                                 Orientation="Horizontal" 
                                 VerticalAlignment="Center" 
                                 Margin="20,0">
-                        <Path Fill="White" 
-                              Width="20" 
-                              Height="20" 
-                              Data="M12 2L2 7V10C2 16 6 20.5 12 22C18 20.5 22 16 22 10V7L12 2Z"
-                              Stretch="Uniform"
-                              Margin="0,0,10,0"/>
+                        <Image Source="icon.png" 
+                               Width="20" 
+                               Height="20" 
+                               Margin="0,0,10,0"/>
                         <TextBlock Text="Office AI - Batu Lab" 
                                    Foreground="White" 
                                    FontWeight="SemiBold" 
@@ -669,7 +668,12 @@
                              AcceptsReturn="False"
                              VerticalScrollBarVisibility="Hidden"
                              VerticalContentAlignment="Center"
-                             Style="{StaticResource ModernTextBoxStyle}"
+                             Background="{StaticResource CardBrush}"
+                             Foreground="{StaticResource TextPrimaryBrush}"
+                             BorderThickness="2"
+                             BorderBrush="{StaticResource BorderBrush}"
+                             Padding="16,12"
+                             FontSize="14"
                              Margin="0,0,8,0">
                         <TextBox.InputBindings>
                             <KeyBinding Key="Enter" 

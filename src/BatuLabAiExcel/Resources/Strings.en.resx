@@ -1,0 +1,259 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  
+  <!-- Login Window -->
+  <data name="Login_Title" xml:space="preserve">
+    <value>Office AI - Login</value>
+  </data>
+  <data name="Login_WelcomeBack" xml:space="preserve">
+    <value>Welcome Back</value>
+  </data>
+  <data name="Login_SignInToContinue" xml:space="preserve">
+    <value>Sign in to continue using Office AI</value>
+  </data>
+  <data name="Login_EmailAddress" xml:space="preserve">
+    <value>Email Address</value>
+  </data>
+  <data name="Login_Password" xml:space="preserve">
+    <value>Password</value>
+  </data>
+  <data name="Login_RememberMe" xml:space="preserve">
+    <value>Remember me</value>
+  </data>
+  <data name="Login_SignIn" xml:space="preserve">
+    <value>Sign In</value>
+  </data>
+  <data name="Login_SigningIn" xml:space="preserve">
+    <value>Signing in...</value>
+  </data>
+  <data name="Login_DontHaveAccount" xml:space="preserve">
+    <value>Don't have an account? </value>
+  </data>
+  <data name="Login_SignUp" xml:space="preserve">
+    <value>Sign Up</value>
+  </data>
+  <data name="Login_ValidationError" xml:space="preserve">
+    <value>Please fill in both email and password fields.</value>
+  </data>
+  
+  <!-- Register Window -->
+  <data name="Register_Title" xml:space="preserve">
+    <value>Office AI - Register</value>
+  </data>
+  <data name="Register_CreateAccount" xml:space="preserve">
+    <value>Create Account</value>
+  </data>
+  <data name="Register_JoinOfficeAI" xml:space="preserve">
+    <value>Join Office AI and discover the power of AI</value>
+  </data>
+  <data name="Register_FirstName" xml:space="preserve">
+    <value>First Name</value>
+  </data>
+  <data name="Register_LastName" xml:space="preserve">
+    <value>Last Name</value>
+  </data>
+  <data name="Register_EmailAddress" xml:space="preserve">
+    <value>Email Address</value>
+  </data>
+  <data name="Register_Password" xml:space="preserve">
+    <value>Password</value>
+  </data>
+  <data name="Register_ConfirmPassword" xml:space="preserve">
+    <value>Confirm Password</value>
+  </data>
+  <data name="Register_AcceptTerms" xml:space="preserve">
+    <value>I accept the </value>
+  </data>
+  <data name="Register_TermsOfService" xml:space="preserve">
+    <value>Terms of Service</value>
+  </data>
+  <data name="Register_And" xml:space="preserve">
+    <value> and </value>
+  </data>
+  <data name="Register_PrivacyPolicy" xml:space="preserve">
+    <value>Privacy Policy</value>
+  </data>
+  <data name="Register_CreateAccountStartTrial" xml:space="preserve">
+    <value>Create Account &amp; Start Trial</value>
+  </data>
+  <data name="Register_AlreadyHaveAccount" xml:space="preserve">
+    <value>Already have an account? </value>
+  </data>
+  <data name="Register_SignIn" xml:space="preserve">
+    <value>Sign In</value>
+  </data>
+  <data name="Register_ValidationError" xml:space="preserve">
+    <value>Please complete all required fields and accept the terms.</value>
+  </data>
+  
+  <!-- Main Window -->
+  <data name="Main_Title" xml:space="preserve">
+    <value>Office Ai - Batu Lab.</value>
+  </data>
+  <data name="Main_BrowseFiles" xml:space="preserve">
+    <value>Browse Files</value>
+  </data>
+  <data name="Main_OpenFolder" xml:space="preserve">
+    <value>Open Folder</value>
+  </data>
+  <data name="Main_CurrentFile" xml:space="preserve">
+    <value>No file selected</value>
+  </data>
+  <data name="Main_SendMessage" xml:space="preserve">
+    <value>Send a message...</value>
+  </data>
+  <data name="Main_Send" xml:space="preserve">
+    <value>Send</value>
+  </data>
+  <data name="Main_Cancel" xml:space="preserve">
+    <value>Cancel</value>
+  </data>
+  <data name="Main_CopyAllMessages" xml:space="preserve">
+    <value>Copy All Messages</value>
+  </data>
+  <data name="Main_ShowSubscription" xml:space="preserve">
+    <value>Subscription Manager</value>
+  </data>
+  <data name="Main_Logout" xml:space="preserve">
+    <value>Logout</value>
+  </data>
+  
+  <!-- Welcome Messages -->
+  <data name="Welcome_Message" xml:space="preserve">
+    <value>Welcome to Office Ai - Batu Lab.! 🎉
+
+I can help you work with Excel files using AI. First, select an Excel file above, then try asking me to:
+• Read data from Excel sheets
+• Write data to specific cells or ranges
+• Format cells and ranges
+• Create charts and pivot tables
+• Apply formulas and calculations
+
+🛡️ DATA PROTECTION: I will NEVER modify, delete, or rearrange your existing data unless you specifically ask me to. I only perform the exact actions you request and preserve all your existing work.
+
+Example: "Read data from Sheet1!A1:C10 and summarize it for me."</value>
+  </data>
+  <data name="Main_FileLoaded" xml:space="preserve">
+    <value>✅ Excel file loaded: {0}
+📁 Path: {1}
+
+🛡️ PROTECTION MODE: Your existing data is safe! I will only perform the specific actions you request. I won't modify, delete, or rearrange your existing data unless you explicitly ask me to.
+
+You can now ask me to work with this file!</value>
+  </data>
+  <data name="Main_FileDropped" xml:space="preserve">
+    <value>📁 Excel file dropped: {0}
+🛡️ PROTECTION MODE: Your existing data is safe! I will only perform the specific actions you request. File has been loaded and is ready for AI processing!</value>
+  </data>
+  <data name="Main_FileCopied" xml:space="preserve">
+    <value>📋 File copied to working directory for safe processing.</value>
+  </data>
+  <data name="Main_FolderOpened" xml:space="preserve">
+    <value>📂 Opened working folder: {0}
+
+You can copy your Excel files here, then use the Browse button to select them.</value>
+  </data>
+  <data name="Main_AllMessagesCopied" xml:space="preserve">
+    <value>📋 All messages copied to clipboard!</value>
+  </data>
+  
+  <!-- Subscription Window -->
+  <data name="Subscription_Title" xml:space="preserve">
+    <value>Office AI - Subscription Plans</value>
+  </data>
+  <data name="Subscription_Header" xml:space="preserve">
+    <value>Office AI - Subscription Plans</value>
+  </data>
+  <data name="Subscription_ChoosePlan" xml:space="preserve">
+    <value>Choose the perfect plan for your needs</value>
+  </data>
+  
+  <!-- Common -->
+  <data name="Common_Close" xml:space="preserve">
+    <value>Close</value>
+  </data>
+  <data name="Common_Error" xml:space="preserve">
+    <value>Error</value>
+  </data>
+  <data name="Common_Warning" xml:space="preserve">
+    <value>Warning</value>
+  </data>
+  <data name="Common_Information" xml:space="preserve">
+    <value>Information</value>
+  </data>
+  <data name="Common_OK" xml:space="preserve">
+    <value>OK</value>
+  </data>
+  <data name="Common_Cancel" xml:space="preserve">
+    <value>Cancel</value>
+  </data>
+  <data name="Common_CopyRights" xml:space="preserve">
+    <value>© 2025 Batu Lab. All rights reserved.</value>
+  </data>
+  
+  <!-- Language -->
+  <data name="Language_Turkish" xml:space="preserve">
+    <value>Türkçe</value>
+  </data>
+  <data name="Language_English" xml:space="preserve">
+    <value>English</value>
+  </data>
+</root>
