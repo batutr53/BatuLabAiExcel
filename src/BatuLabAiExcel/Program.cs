@@ -88,6 +88,7 @@ public static class Program
                 // MCP and Chat Services
                 services.AddSingleton<IChatOrchestrator, ChatOrchestrator>();
                 services.AddSingleton<IMcpClient, McpClient>();
+                services.AddSingleton<IExcelDataProtectionService, ExcelDataProtectionService>();
                 
                 // ViewModels
                 services.AddTransient<MainViewModel>();

@@ -1,5 +1,6 @@
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using System.Text;
 using System.Text.Json;
 using BatuLabAiExcel.Models;
 
@@ -12,20 +13,24 @@ public class ChatOrchestrator : IChatOrchestrator
 {
     private readonly IAiServiceFactory _aiServiceFactory;
     private readonly IMcpClient _mcpClient;
+    private readonly IExcelDataProtectionService _excelProtection;
     private readonly ILogger<ChatOrchestrator> _logger;
     private readonly AppConfiguration.AiProviderSettings _providerSettings;
 
     private readonly List<AiMessage> _conversationHistory = new();
     private string _currentProvider = "Claude";
+    private ExcelAnalysisResult? _currentExcelAnalysis;
 
     public ChatOrchestrator(
         IAiServiceFactory aiServiceFactory,
         IMcpClient mcpClient,
+        IExcelDataProtectionService excelProtection,
         IOptions<AppConfiguration.AiProviderSettings> providerSettings,
         ILogger<ChatOrchestrator> logger)
     {
         _aiServiceFactory = aiServiceFactory;
         _mcpClient = mcpClient;
+        _excelProtection = excelProtection;
         _providerSettings = providerSettings.Value;
         _logger = logger;
         _currentProvider = _providerSettings.DefaultProvider;
@@ -46,6 +51,22 @@ public class ChatOrchestrator : IChatOrchestrator
                 return Result<string>.Failure($"Excel integration not available: {initResult.Error}");
             }
 
+            // Analyze current Excel content for data protection
+            if (_currentExcelAnalysis == null)
+            {
+                _logger.LogInformation("Analyzing Excel content for data protection");
+                var analysisResult = await _excelProtection.AnalyzeCurrentContentAsync(cancellationToken).ConfigureAwait(false);
+                if (analysisResult.IsSuccess)
+                {
+                    _currentExcelAnalysis = analysisResult.Value;
+                    _logger.LogInformation("Excel analysis completed. Found {SheetCount} sheets", _currentExcelAnalysis?.Sheets.Count ?? 0);
+                }
+                else
+                {
+                    _logger.LogWarning("Could not analyze Excel content: {Error}", analysisResult.Error);
+                }
+            }
+
             // Get available tools from MCP
             var toolsResult = await _mcpClient.GetAvailableToolsAsync(cancellationToken).ConfigureAwait(false);
             if (!toolsResult.IsSuccess)
@@ -54,18 +75,20 @@ public class ChatOrchestrator : IChatOrchestrator
                 // Continue without tools, Claude might still be able to help
             }
 
-            // Add user message to conversation history
+            // Add user message to conversation history with Excel context
+            var userMessageContent = new List<AiMessageContent>
+            {
+                new AiMessageContent
+                {
+                    Type = "text",
+                    Text = BuildContextualMessage(message, _currentExcelAnalysis)
+                }
+            };
+
             _conversationHistory.Add(new AiMessage
             {
                 Role = "user",
-                Content = new List<AiMessageContent>
-                {
-                    new AiMessageContent
-                    {
-                        Type = "text",
-                        Text = message
-                    }
-                }
+                Content = userMessageContent
             });
 
             // Prepare AI request with tools
@@ -145,6 +168,31 @@ public class ChatOrchestrator : IChatOrchestrator
 
                     try
                     {
+                        // Validate operation for data protection
+                        if (_currentExcelAnalysis != null)
+                        {
+                            var validationResult = _excelProtection.ValidateOperation(
+                                toolUse.ToolName!,
+                                toolUse.ToolInput ?? new object(),
+                                _currentExcelAnalysis);
+
+                            if (!validationResult.IsSuccess)
+                            {
+                                _logger.LogWarning("Operation validation failed: {Error}", validationResult.Error);
+                                
+                                var validationFailedResult = new AiMessageContent
+                                {
+                                    Type = "tool_result",
+                                    ToolUseId = toolUse.ToolUseId,
+                                    ToolResult = $"Operation blocked for data protection: {validationResult.Error}",
+                                    IsError = true
+                                };
+                                
+                                toolResults.Add(validationFailedResult);
+                                continue;
+                            }
+                        }
+
                         // Call MCP tool
                         var mcpResult = await _mcpClient.CallToolAsync(
                             toolUse.ToolName!,
@@ -438,5 +486,61 @@ public class ChatOrchestrator : IChatOrchestrator
             "array" => "string",
             _ => type
         };
+    }
+
+    /// <summary>
+    /// Builds a contextual message that includes Excel state information
+    /// </summary>
+    private string BuildContextualMessage(string userMessage, ExcelAnalysisResult? analysis)
+    {
+        if (analysis == null || !analysis.Sheets.Any())
+        {
+            return userMessage;
+        }
+
+        var contextBuilder = new StringBuilder();
+        
+        // Add Excel context header
+        contextBuilder.AppendLine("EXCEL CONTEXT (Current Excel State):");
+        contextBuilder.AppendLine("=====================================");
+        
+        // Add workbook info
+        if (analysis.WorkbookInfo.SheetNames.Any())
+        {
+            contextBuilder.AppendLine($"Active Workbook: {analysis.WorkbookInfo.SheetNames.Count} sheets");
+            contextBuilder.AppendLine($"Sheets: {string.Join(", ", analysis.WorkbookInfo.SheetNames)}");
+            contextBuilder.AppendLine();
+        }
+
+        // Add detailed sheet information
+        foreach (var sheet in analysis.Sheets.Where(s => s.HasData))
+        {
+            contextBuilder.AppendLine($"Sheet '{sheet.SheetName}':");
+            contextBuilder.AppendLine($"  - Used Range: {sheet.UsedRange}");
+            contextBuilder.AppendLine($"  - Size: {sheet.RowCount} rows × {sheet.ColumnCount} columns");
+            
+            if (!string.IsNullOrEmpty(sheet.DataSample))
+            {
+                contextBuilder.AppendLine($"  - Sample Data: {sheet.DataSample}");
+            }
+            
+            contextBuilder.AppendLine();
+        }
+
+        // Add data preservation instructions
+        contextBuilder.AppendLine("IMPORTANT INSTRUCTIONS:");
+        contextBuilder.AppendLine("- ALWAYS preserve existing data unless explicitly told to delete or replace it");
+        contextBuilder.AppendLine("- Before modifying any cells, first read the current content in that range");
+        contextBuilder.AppendLine("- If you need to format data, apply formatting without changing the values");
+        contextBuilder.AppendLine("- If you need to add data, find empty cells or ask where to place it");
+        contextBuilder.AppendLine("- If existing data would be overwritten, ask for clarification first");
+        contextBuilder.AppendLine();
+        
+        // Add the actual user request
+        contextBuilder.AppendLine("USER REQUEST:");
+        contextBuilder.AppendLine("=============");
+        contextBuilder.AppendLine(userMessage);
+
+        return contextBuilder.ToString();
     }
 }
