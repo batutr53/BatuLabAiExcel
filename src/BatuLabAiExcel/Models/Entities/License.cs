@@ -22,6 +22,10 @@ public class License
     public LicenseStatus Status { get; set; }
 
     [Required]
+    [StringLength(255)]
+    public string LicenseKey { get; set; } = string.Empty;
+
+    [Required]
     public DateTime StartDate { get; set; }
 
     [Required]

@@ -95,5 +95,14 @@ public partial class LoginWindow : Window
         }
     }
 
+    private void BuyLicenseButton_Click(object sender, RoutedEventArgs e)
+    {
+        // Open subscription window directly
+        var serviceProvider = ((App)Application.Current).ServiceProvider;
+        var subscriptionWindow = serviceProvider.GetRequiredService<SubscriptionWindow>();
+        subscriptionWindow.Show();
+        Close();
+    }
+
 }
 

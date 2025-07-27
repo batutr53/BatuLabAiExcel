@@ -20,6 +20,7 @@ public class AuthenticationService : IAuthenticationService
     private readonly ILogger<AuthenticationService> _logger;
     private readonly ISecureStorageService _secureStorage;
     private readonly ILicenseService _licenseService;
+    private readonly IEmailService _emailService;
     private readonly string _jwtSecret;
     private const int TokenExpiryHours = 24;
 
@@ -27,12 +28,14 @@ public class AuthenticationService : IAuthenticationService
         AppDbContext context,
         ILogger<AuthenticationService> logger,
         ISecureStorageService secureStorage,
-        ILicenseService licenseService)
+        ILicenseService licenseService,
+        IEmailService emailService)
     {
         _context = context;
         _logger = logger;
         _secureStorage = secureStorage;
         _licenseService = licenseService;
+        _emailService = emailService;
         _jwtSecret = Environment.GetEnvironmentVariable("JWT_SECRET") ?? "your-super-secret-jwt-key-change-in-production";
     }
 
@@ -173,6 +176,17 @@ public class AuthenticationService : IAuthenticationService
 
             var token = GenerateJwtToken(user);
             CurrentUser = UserInfo.FromEntity(user);
+
+            // Send welcome email
+            var emailResult = await _emailService.SendWelcomeEmailAsync(user.Email, user.FullName, cancellationToken);
+            if (emailResult.IsSuccess)
+            {
+                _logger.LogInformation("Welcome email sent successfully to {Email}", user.Email);
+            }
+            else
+            {
+                _logger.LogWarning("Failed to send welcome email to {Email}: {Error}", user.Email, emailResult.Error);
+            }
 
             _logger.LogInformation("User registered successfully: {Email}", request.Email);
             AuthenticationStateChanged?.Invoke(this, true);

@@ -99,6 +99,7 @@ public class LicenseInfo
     public Guid Id { get; set; }
     public LicenseType Type { get; set; }
     public LicenseStatus Status { get; set; }
+    public string LicenseKey { get; set; } = string.Empty;
     public DateTime StartDate { get; set; }
     public DateTime ExpiresAt { get; set; }
     public bool IsValid { get; set; }
@@ -115,6 +116,7 @@ public class LicenseInfo
             Id = license.Id,
             Type = license.Type,
             Status = license.Status,
+            LicenseKey = license.LicenseKey,
             StartDate = license.StartDate,
             ExpiresAt = license.ExpiresAt,
             IsValid = license.IsValid,

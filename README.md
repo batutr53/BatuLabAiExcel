@@ -157,7 +157,40 @@ CLAUDE_API_KEY=sk-ant-api03-...
 
 # Override MCP working directory
 MCP_WORKING_DIRECTORY=C:\MyExcelFiles
+
+# Email service credentials
+EMAIL_SMTP_HOST=smtp.gmail.com
+EMAIL_USERNAME=your-email@gmail.com
+EMAIL_PASSWORD=your-app-password
 ```
+
+#### Email Configuration
+For license key delivery and user notifications, configure SMTP settings:
+
+```json
+{
+  "Email": {
+    "SmtpHost": "smtp.gmail.com",
+    "SmtpPort": 587,
+    "Username": "your-email@gmail.com",
+    "Password": "your-app-password",
+    "FromEmail": "noreply@batulab.com",
+    "FromName": "Office AI - Batu Lab",
+    "EnableSsl": true,
+    "TimeoutSeconds": 30
+  }
+}
+```
+
+**Gmail Setup:**
+1. Enable 2-factor authentication
+2. Generate an App Password: [Google Account Settings](https://myaccount.google.com/apppasswords)
+3. Use the App Password in the configuration
+
+**Other Email Providers:**
+- **Outlook/Hotmail**: `smtp-mail.outlook.com:587`
+- **Yahoo**: `smtp.mail.yahoo.com:587`
+- **SendGrid**: `smtp.sendgrid.net:587`
 
 ### 3. Development Setup
 

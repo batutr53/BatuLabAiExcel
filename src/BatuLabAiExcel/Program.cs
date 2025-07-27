@@ -52,6 +52,8 @@ public static class Program
                 services.Configure<AppConfiguration.AiProviderSettings>(context.Configuration.GetSection("AiProvider"));
                 services.Configure<AppConfiguration.McpSettings>(context.Configuration.GetSection("Mcp"));
                 services.Configure<AppConfiguration.DesktopAutomationSettings>(context.Configuration.GetSection("DesktopAutomation"));
+                services.Configure<AppConfiguration.EmailSettings>(context.Configuration.GetSection("Email"));
+                services.Configure<AppConfiguration.StripeSettings>(context.Configuration.GetSection("Stripe"));
 
                 // Database
                 var connectionString = context.Configuration.GetConnectionString("DefaultConnection") ?? 
@@ -66,6 +68,7 @@ public static class Program
                 services.AddScoped<ILicenseService, LicenseService>();
                 services.AddScoped<IPaymentService, PaymentService>();
                 services.AddSingleton<ISecureStorageService, SecureStorageService>();
+                services.AddScoped<IEmailService, EmailService>();
 
                 // HTTP Clients
                 services.AddHttpClient<IClaudeService, ClaudeService>();

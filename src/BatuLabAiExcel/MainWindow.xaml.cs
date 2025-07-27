@@ -224,6 +224,14 @@ public partial class MainWindow : Window
     {
         Close();
     }
+
+    private void UpgradeButton_Click(object sender, RoutedEventArgs e)
+    {
+        // Open subscription window
+        var serviceProvider = ((App)Application.Current).ServiceProvider;
+        var subscriptionWindow = serviceProvider.GetRequiredService<Views.SubscriptionWindow>();
+        subscriptionWindow.ShowDialog();
+    }
 }
 
 /// <summary>

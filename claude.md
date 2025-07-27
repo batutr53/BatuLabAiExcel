@@ -35,6 +35,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **AuthenticationService**: JWT-based user authentication
 - **LicenseService**: License validation and management
 - **PaymentService**: Stripe payment integration
+- **EmailService**: SMTP-based email delivery for license keys and notifications
 
 ### AI Provider System
 The application supports multiple AI providers through a factory pattern:
@@ -116,6 +117,7 @@ dotnet ef database drop -f --project src\BatuLabAiExcel
 - **Authentication**: JWT settings, password policies
 - **Stripe**: Payment configuration, webhook secrets
 - **License**: Trial duration, pricing, validation settings
+- **Email**: SMTP configuration for license delivery and notifications
 
 ### Environment Variables
 - `CLAUDE_API_KEY`: Override Claude API key

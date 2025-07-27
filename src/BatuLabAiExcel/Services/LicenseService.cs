@@ -41,6 +41,7 @@ public class LicenseService : ILicenseService
                 UserId = userId,
                 Type = LicenseType.Trial,
                 Status = LicenseStatus.Active,
+                LicenseKey = GenerateLicenseKey(LicenseType.Trial),
                 StartDate = DateTime.UtcNow,
                 ExpiresAt = DateTime.UtcNow.AddDays(1), // 1-day trial
                 CreatedAt = DateTime.UtcNow,
@@ -159,6 +160,7 @@ public class LicenseService : ILicenseService
                 UserId = userId,
                 Type = type,
                 Status = LicenseStatus.Active,
+                LicenseKey = GenerateLicenseKey(type),
                 StartDate = startDate,
                 ExpiresAt = expiryDate,
                 CreatedAt = DateTime.UtcNow,
@@ -268,4 +270,24 @@ public class LicenseService : ILicenseService
         LicenseType.Lifetime => 999.99m,
         _ => 0m
     };
+
+    /// <summary>
+    /// Generate a unique license key for the specified license type
+    /// </summary>
+    private static string GenerateLicenseKey(LicenseType licenseType)
+    {
+        var prefix = licenseType switch
+        {
+            LicenseType.Trial => "TRIAL",
+            LicenseType.Monthly => "MONTHLY",
+            LicenseType.Yearly => "YEARLY",
+            LicenseType.Lifetime => "LIFETIME",
+            _ => "UNKNOWN"
+        };
+
+        var timestamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString();
+        var randomPart = Guid.NewGuid().ToString("N")[..8].ToUpperInvariant();
+        
+        return $"OFFICE-AI-{prefix}-{timestamp}-{randomPart}";
+    }
 }

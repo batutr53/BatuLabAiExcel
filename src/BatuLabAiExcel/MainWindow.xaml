@@ -447,10 +447,15 @@
                     <!-- Quick Actions -->
                     <StackPanel Grid.Column="1" 
                                 Orientation="Horizontal">
+                        <Button Content="💎 Upgrade" 
+                                Click="UpgradeButton_Click"
+                                Style="{StaticResource ModernButtonStyle}"
+                                Background="{StaticResource AccentBrush}"
+                                Margin="0,0,10,0"/>
                         <Button Content="📁 Browse Files" 
                                 Command="{Binding BrowseFileCommand}"
                                 Style="{StaticResource SecondaryButtonStyle}"
-                                Margin="10,0"/>
+                                Margin="0,0,10,0"/>
                         <Button Content="📂 Open Folder" 
                                 Command="{Binding OpenFolderCommand}"
                                 Style="{StaticResource SecondaryButtonStyle}"/>

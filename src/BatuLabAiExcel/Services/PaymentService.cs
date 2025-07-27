@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Stripe;
 using Stripe.Checkout;
 using Stripe.BillingPortal;
@@ -17,6 +18,8 @@ public class PaymentService : IPaymentService
     private readonly AppDbContext _context;
     private readonly ILogger<PaymentService> _logger;
     private readonly ILicenseService _licenseService;
+    private readonly IEmailService _emailService;
+    private readonly AppConfiguration.StripeSettings _stripeSettings;
     private readonly Stripe.Checkout.SessionService _sessionService;
     private readonly CustomerService _customerService;
     private readonly SubscriptionService _subscriptionService;
@@ -25,15 +28,19 @@ public class PaymentService : IPaymentService
     public PaymentService(
         AppDbContext context,
         ILogger<PaymentService> logger,
-        ILicenseService licenseService)
+        ILicenseService licenseService,
+        IEmailService emailService,
+        IOptions<AppConfiguration.StripeSettings> stripeSettings)
     {
         _context = context;
         _logger = logger;
         _licenseService = licenseService;
+        _emailService = emailService;
+        _stripeSettings = stripeSettings.Value;
 
         // Initialize Stripe services
-        StripeConfiguration.ApiKey = Environment.GetEnvironmentVariable("STRIPE_SECRET_KEY") ?? 
-                                   throw new InvalidOperationException("STRIPE_SECRET_KEY environment variable is required");
+        StripeConfiguration.ApiKey = _stripeSettings.SecretKey ?? 
+                                   throw new InvalidOperationException("Stripe SecretKey is not configured in appsettings.json");
 
         _sessionService = new Stripe.Checkout.SessionService();
         _customerService = new CustomerService();
@@ -52,7 +59,7 @@ public class PaymentService : IPaymentService
                 Description = "Perfect for short-term projects",
                 Price = 29.99m,
                 Currency = "USD",
-                StripePriceId = Environment.GetEnvironmentVariable("STRIPE_MONTHLY_PRICE_ID") ?? "price_monthly",
+                StripePriceId = _stripeSettings.MonthlyPriceId,
                 Features = new List<string>
                 {
                     "✅ Full Excel AI capabilities",
@@ -71,7 +78,7 @@ public class PaymentService : IPaymentService
                 Description = "Best value for regular users",
                 Price = 299.99m,
                 Currency = "USD",
-                StripePriceId = Environment.GetEnvironmentVariable("STRIPE_YEARLY_PRICE_ID") ?? "price_yearly",
+                StripePriceId = _stripeSettings.YearlyPriceId,
                 Features = new List<string>
                 {
                     "✅ All Monthly features",
@@ -91,7 +98,7 @@ public class PaymentService : IPaymentService
                 Description = "One-time payment, lifetime access",
                 Price = 999.99m,
                 Currency = "USD",
-                StripePriceId = Environment.GetEnvironmentVariable("STRIPE_LIFETIME_PRICE_ID") ?? "price_lifetime",
+                StripePriceId = _stripeSettings.LifetimePriceId,
                 Features = new List<string>
                 {
                     "✅ All Yearly features",
@@ -191,10 +198,10 @@ public class PaymentService : IPaymentService
     {
         try
         {
-            var webhookSecret = Environment.GetEnvironmentVariable("STRIPE_WEBHOOK_SECRET");
+            var webhookSecret = _stripeSettings.WebhookSecret;
             if (string.IsNullOrEmpty(webhookSecret))
             {
-                _logger.LogError("Stripe webhook secret not configured");
+                _logger.LogError("Stripe webhook secret not configured in appsettings.json");
                 return false;
             }
 
@@ -285,6 +292,27 @@ public class PaymentService : IPaymentService
 
             _context.Payments.Add(payment);
             await _context.SaveChangesAsync(cancellationToken);
+
+            // Send license key email to user
+            var user = await _context.Users.FindAsync(new object[] { userId }, cancellationToken);
+            if (user != null)
+            {
+                var emailResult = await _emailService.SendLicenseKeyEmailAsync(
+                    user.Email, 
+                    user.FullName, 
+                    license.LicenseKey, 
+                    licenseType.ToString(), 
+                    cancellationToken);
+
+                if (emailResult.IsSuccess)
+                {
+                    _logger.LogInformation("License key email sent successfully to {Email}", user.Email);
+                }
+                else
+                {
+                    _logger.LogWarning("Failed to send license key email to {Email}: {Error}", user.Email, emailResult.Error);
+                }
+            }
 
             _logger.LogInformation("Payment verified and license updated for user: {UserId}, License: {LicenseType}", userId, licenseType);
             return true;
@@ -390,6 +418,28 @@ public class PaymentService : IPaymentService
                         : license.ExpiresAt.AddYears(1);
 
                     await _context.SaveChangesAsync(cancellationToken);
+
+                    // Send renewal confirmation email
+                    var user = await _context.Users.FindAsync(new object[] { userId }, cancellationToken);
+                    if (user != null)
+                    {
+                        var emailResult = await _emailService.SendLicenseKeyEmailAsync(
+                            user.Email, 
+                            user.FullName, 
+                            license.LicenseKey, 
+                            $"{license.Type} (Renewed)", 
+                            cancellationToken);
+
+                        if (emailResult.IsSuccess)
+                        {
+                            _logger.LogInformation("License renewal email sent successfully to {Email}", user.Email);
+                        }
+                        else
+                        {
+                            _logger.LogWarning("Failed to send license renewal email to {Email}: {Error}", user.Email, emailResult.Error);
+                        }
+                    }
+
                     _logger.LogInformation("License extended for recurring payment - User: {UserId}", userId);
                 }
             }

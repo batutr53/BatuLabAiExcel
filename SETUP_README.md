@@ -110,8 +110,9 @@ dotnet run
 2. "Sign Up" tıklanır → Register ekranı açılır
 3. Form doldurulur ve "Create Account" tıklanır
 4. Otomatik 1 günlük trial lisans oluşturulur
-5. Ana uygulama açılır
-6. License Status: "Trial (1 Day) - 1 day remaining"
+5. Welcome email gönderilir (trial bilgisi ile)
+6. Ana uygulama açılır
+7. License Status: "Trial (1 Day) - 1 day remaining"
 ```
 
 ### Senaryo 2: Trial Süresi Bitmiş Kullanıcı
@@ -122,7 +123,8 @@ dotnet run
 4. "Choose Your Plan" görülür
 5. Plan seçilir → Stripe Checkout açılır
 6. Ödeme tamamlanır → Webhook tetiklenir
-7. Lisans güncellenir → Ana uygulama açılır
+7. Lisans güncellenir → License key email gönderilir
+8. Ana uygulama açılır
 ```
 
 ### Senaryo 3: Aktif Aylık Abonelik

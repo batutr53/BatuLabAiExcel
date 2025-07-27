@@ -12,6 +12,8 @@ public class AppConfiguration
     public McpSettings Mcp { get; set; } = new();
     public LoggingSettings Logging { get; set; } = new();
     public ApplicationSettings Application { get; set; } = new();
+    public EmailSettings Email { get; set; } = new();
+    public StripeSettings Stripe { get; set; } = new();
 
     public class ClaudeSettings
     {
@@ -200,5 +202,51 @@ public class AppConfiguration
         public bool AutoInstall { get; set; } = true;
         public string InstallCommand { get; set; } = "npm install -g @anthropic-ai/claude-code";
         public string ExtraArgs { get; set; } = "--no-confirm --json-output";
+    }
+
+    public class EmailSettings
+    {
+        public string SmtpHost { get; set; } = string.Empty;
+        public int SmtpPort { get; set; } = 587;
+        public string Username { get; set; } = string.Empty;
+        public string Password { get; set; } = string.Empty;
+        public string FromEmail { get; set; } = "noreply@batulab.com";
+        public string FromName { get; set; } = "Office AI - Batu Lab";
+        public bool EnableSsl { get; set; } = true;
+        public int TimeoutSeconds { get; set; } = 30;
+
+        /// <summary>
+        /// Get masked password for logging
+        /// </summary>
+        public string GetMaskedPassword()
+        {
+            if (string.IsNullOrEmpty(Password) || Password.Length < 4)
+                return "***";
+            
+            return $"***{Password[^2..]}";
+        }
+    }
+
+    public class StripeSettings
+    {
+        public string PublishableKey { get; set; } = string.Empty;
+        public string SecretKey { get; set; } = string.Empty;
+        public string WebhookSecret { get; set; } = string.Empty;
+        public string MonthlyPriceId { get; set; } = string.Empty;
+        public string YearlyPriceId { get; set; } = string.Empty;
+        public string LifetimePriceId { get; set; } = string.Empty;
+        public string SuccessUrl { get; set; } = string.Empty;
+        public string CancelUrl { get; set; } = string.Empty;
+
+        /// <summary>
+        /// Get masked secret key for logging
+        /// </summary>
+        public string GetMaskedSecretKey()
+        {
+            if (string.IsNullOrEmpty(SecretKey) || SecretKey.Length < 8)
+                return "***";
+            
+            return $"{SecretKey[..4]}***{SecretKey[^4..]}";
+        }
     }
 }

@@ -42,6 +42,9 @@
     
     <!-- Secure Storage -->
     <PackageReference Include="Microsoft.Win32.Registry" Version="5.0.0" />
+    
+    <!-- Email -->
+    <PackageReference Include="MailKit" Version="4.8.0" />
   </ItemGroup>
 
   <ItemGroup>

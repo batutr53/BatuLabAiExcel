@@ -300,6 +300,29 @@
                                 Height="Auto"
                                 Margin="5,0,0,0"/>
                     </StackPanel>
+                    
+                    <!-- Buy License Button -->
+                    <Button Content="💎 Buy License"
+                            Click="BuyLicenseButton_Click"
+                            Style="{StaticResource ModernButtonStyle}"
+                            Background="{StaticResource AccentBrush}"
+                            Margin="0,15,0,0">
+                        <Button.Template>
+                            <ControlTemplate TargetType="Button">
+                                <Border Background="{TemplateBinding Background}"
+                                        CornerRadius="8"
+                                        BorderThickness="0">
+                                    <ContentPresenter HorizontalAlignment="Center" 
+                                                    VerticalAlignment="Center"/>
+                                </Border>
+                                <ControlTemplate.Triggers>
+                                    <Trigger Property="IsMouseOver" Value="True">
+                                        <Setter Property="Background" Value="#2563EB"/>
+                                    </Trigger>
+                                </ControlTemplate.Triggers>
+                            </ControlTemplate>
+                        </Button.Template>
+                    </Button>
                 </StackPanel>
             </ScrollViewer>
             

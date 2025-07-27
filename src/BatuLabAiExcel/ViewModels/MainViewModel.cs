@@ -6,6 +6,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Windows;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Win32;
 using BatuLabAiExcel.Models;
 using BatuLabAiExcel.Models.DTOs;
@@ -468,6 +469,24 @@ User message: {userMessage}";
                 else
                 {
                     LicenseStatusText = "No active license";
+                    
+                    // If license is expired or invalid, show subscription window
+                    if (CurrentLicense != null && CurrentLicense.IsExpired)
+                    {
+                        Application.Current.Dispatcher.BeginInvoke(new Action(() =>
+                        {
+                            try
+                            {
+                                var serviceProvider = ((App)Application.Current).ServiceProvider;
+                                var subscriptionWindow = serviceProvider.GetRequiredService<SubscriptionWindow>();
+                                subscriptionWindow.ShowDialog();
+                            }
+                            catch (Exception ex)
+                            {
+                                _logger.LogError(ex, "Error opening subscription window");
+                            }
+                        }));
+                    }
                 }
             }
         }
