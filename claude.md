@@ -1,62 +1,198 @@
-AMAÇ
-Windows üzerinde çalışan bir **WPF (.NET 9) masaüstü uygulaması** geliştirmek istiyorum. Projenin **solution adı `batulabaiexcel`**, uygulamanın kullanıcıya görünen adı **“Office Ai - Batu Lab.”** olacak. Uygulama, kullanıcıdan gelen prompt’u **Claude Messages API**’ye gönderecek; Claude yanıtında gelen **tool_use** çağrılarını **MCP (Model Context Protocol)** konuşan **excel-mcp-server** (https://github.com/haris-musa/excel-mcp-server) üzerinden Excel’e yönlendirecek. MCP’den gelen sonuçlar **tool_result** olarak Claude’a geri dönecek ve final çıktı UI’da gösterilecek.
+# CLAUDE.md
 
-ÇOK ÖNEMLİ İSTEKLER
-1. **Mimariyi tamamen sen tasarla**: Katmanlar, bağımlılıklar, sınıf ve namespace adları, paket seçimleri, error-handling, config, logging, test yaklaşımı… Hepsi için **neden** seçtiğini kısa gerekçelerle açıkla. (Örn. StreamJsonRpc mi yazacaksın, yoksa minimal bir JSON-RPC client mı? Neden?)
-2. **excel-mcp-server reposunu oku** ve oradaki gerçek method adlarını, parametre şemalarını, initialize/handshake akışını birebir çıkar. (Eğer bir kısım belirsizse, mantıklı bir varsayım yap; README içinde “TODO: repodan teyit edilecek” diye işaretle, ama mümkün olduğunca doğru çıkarmaya çalış.)
-3. **Tek bir cevapta eksiksiz bir proje ver**: 
-   - **Solution + tüm .csproj’lar**
-   - **Tüm C# kaynak kodları**
-   - **appsettings.json**
-   - **PowerShell scriptleri** (örn. `scripts/setup_mcp.ps1`, `scripts/run_backend_check.ps1`)
-   - **README.md** (detaylı kurulum, çalıştırma, test, hata senaryoları, rate limit, güvenlik vs.)
-   - **(İsteğe bağlı ama tercih edilir)** küçük bir **integration test** veya en azından bir **Console/Debug örneği** ile end-to-end senaryoyu kanıtla.
-4. **Claude Messages API’nin tool_use / tool_result round-trip akışını eksiksiz uygula**. Kendi DTO’larını, JSON (de)serialization mantığını, error/timeout/retry stratejilerini yaz.
-5. **UI başlığı, log dosya adları vb. gibi yerlerde uygulamanın görünen adını “Office Ai - Batu Lab.” olarak kullan**.
-6. **En güncel .NET (9)**, **MVVM**, **Microsoft.Extensions.Hosting (Generic Host + DI)**, **Serilog** (dosya logu), **CommunityToolkit.Mvvm**, **System.Text.Json** kullan.
-7. **appsettings.json** üzerinden ayarlanabilir yapı:
-   - `Claude.ApiKey`, `Claude.Model`
-   - `Mcp.PythonPath`, `Mcp.ServerScript`, `Mcp.WorkingDirectory`, `Mcp.TimeoutSeconds`
-   - `Logging` (Serilog dosya yolu vs.)
-8. **Güvenlik & Operasyonel detaylar**:
-   - API key’lerin sızmaması (masking)
-   - 429 / rate limit durumunda retry/backoff politikası
-   - MCP tarafında timeout, cancel, yeniden başlatma stratejisi
-9. **Kullanıcı Deneyimi**:
-   - Basit bir chat UI: Prompt TextBox, Send butonu, Claude yanıtını gösteren alan, loading/busy state.
-   - Hataları kullanıcıya uygun ve anlaşılır biçimde göster.
-10. **Dağıtım ve kurulum**:
-   - `scripts/setup_mcp.ps1`: `excel-mcp-server` repo’sunu klonlayıp venv kuran, `pip install -r requirements.txt` yapan script.
-   - `scripts/run_backend_check.ps1`: MCP server’ı `--stdio` ile ayağa kaldırıp temel bir JSON-RPC request ile bağlantıyı doğrulayan script.
-   - README’de Visual Studio ve `dotnet` CLI ile nasıl derlenip çalıştırılacağı, Python bağımlılıklarının nasıl paketleneceği (ister embeddable Python, ister kullanıcıya kurulum), production önerileri.
-11. **Test edilebilir örnek senaryo**:
-   - Prompt: “Sheet1!A1:C3 aralığını oku ve bana özetini ver.”
-   - Beklenen akış: Claude → tool_use(`excel.read_range` benzeri gerçek method) → WPF MCP’ye yönlendirir → sonuç tool_result olarak Claude’a döner → Claude final metin üretir → UI’da gösterilir.
-   - Bu round-trip’i README’de adım adım anlat; mümkünse integration-test benzeri bir örneği de sun.
-12. **Kalite ve dokümantasyon**:
-   - Public sınıflarda XML doc (özet seviyesinde)
-   - Katmanlar arası bağımlılıklara dikkat (Domain UI/Infrastructure’a referans vermez)
-   - CancellationToken her IO operasyonunda desteklensin
-   - Hata mesajları ve logging belirgin, ayırt edilebilir
-   - Kod bloklarını **dil etiketleri** ile ver (```csharp, ```json, ```powershell, vb.)
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-ÇIKTI FORMATIN (TEK CEVAPTA HEPSİ!)
-1) **Mimari tasarım ve gerekçeler** (seçtiğin pattern’leri, paketleri, JSON-RPC stratejisini neden seçtiğini açıkla)
-2) **Proje klasör ağacı (tree)**
-3) **Tüm .csproj içerikleri**
-4) **appsettings.json ve gerekiyorsa appsettings.Development.json**
-5) **BÜTÜN C# kaynak kodları** (UI, ViewModels, Orchestrator, ClaudeService, McpClient, DTO’lar, Result tipleri, Program/App, vs.)
-6) **PowerShell scriptleri** (`scripts/setup_mcp.ps1`, `scripts/run_backend_check.ps1`)
-7) **README.md** (çok detaylı, kopyala-çalıştır netliğinde)
-8) Eğer excel-mcp-server method & param şemalarını birebir çıkardıysan, bunların bir **EK** bölümünde tablo ve örnek JSON’larıyla listesi
-9) **Örnek tool_use & tool_result payload’ları**
-10) **TODO / Known Issues** bölümü: repodan teyit edilmesi gerekenler, gelecekte yapılacaklar
+## Project Overview
 
-DİĞER NOTLAR
-- **excel-mcp-server’ın gerçek methodlarını kullan** (örn. `excel/read_range`, `excel/write_range` vs. ne ise o). Yanlış isim bırakma. Emin değilsen geçici bir isim verme; repo’yu analiz ederek en doğru isimleri koy, zorunlu yerlerde TODO işaretle.
-- Kodun derlenebilir olmasına dikkat et (usings, target frameworks, paket referansları).
-- WPF için **tek bir MainWindow** ve basit ama temiz bir MVVM kurulumu yeterlidir.
-- Çalışma zamanında MCP server process’i kapandığında yeniden başlatma veya kullanıcıya anlamlı uyarı verme stratejini yaz.
-- Uygulama başlığında ve About bilgilerinde **“Office Ai - Batu Lab.”** ibaresini göster.
+**Office Ai - Batu Lab.** is a Windows WPF desktop application (.NET 9) that bridges Claude AI with Excel through the Model Context Protocol (MCP). It features:
 
-Şimdi tüm bu gereksinimleri uygulayarak, **tek mesajda** eksiksiz bir **çalışır başlangıç çözümü** (full code, script, README ile) üret.
+- Natural language Excel automation using Claude API
+- MCP integration with excel-mcp-server for Excel operations
+- Enterprise-grade authentication, licensing, and payment system via Stripe
+- Modern MVVM architecture with dependency injection
+
+## Architecture
+
+### Layered Architecture
+```
+┌─────────────────────┐
+│   Presentation      │  ← WPF Views/ViewModels (MVVM)
+├─────────────────────┤
+│   Service Layer     │  ← AI Services, MCP Client, Chat Orchestrator
+├─────────────────────┤
+│   Business Layer    │  ← Authentication, License, Payment Services
+├─────────────────────┤
+│   Data Layer        │  ← Entity Framework Core + PostgreSQL
+├─────────────────────┤
+│   Infrastructure    │  ← ProcessHelper, HttpRetryHandler, SecureStorage
+└─────────────────────┘
+```
+
+### Key Services
+- **ChatOrchestrator**: Manages AI conversation flow and tool execution
+- **ClaudeService**: HTTP client for Claude Messages API with retry policies
+- **McpClient**: JSON-RPC client for MCP server communication via stdio
+- **AuthenticationService**: JWT-based user authentication
+- **LicenseService**: License validation and management
+- **PaymentService**: Stripe payment integration
+
+### AI Provider System
+The application supports multiple AI providers through a factory pattern:
+- **Claude** (primary): Via direct API and desktop automation
+- **Gemini**: Google's AI model
+- **Groq**: Fast inference AI service
+- **Claude CLI**: Uses claude-code CLI tool with MCP
+
+## Common Development Commands
+
+### Building and Running
+```bash
+# Build the solution
+dotnet build
+
+# Run the application
+dotnet run --project src\BatuLabAiExcel
+
+# Run with specific environment
+dotnet run --project src\BatuLabAiExcel --environment Development
+
+# Build for release
+dotnet build --configuration Release
+
+# Publish for deployment
+dotnet publish src\BatuLabAiExcel -c Release -r win-x64 --self-contained true
+```
+
+### Database Operations
+```bash
+# Add migration
+dotnet ef migrations add MigrationName --project src\BatuLabAiExcel
+
+# Update database
+dotnet ef database update --project src\BatuLabAiExcel
+
+# Drop database (development only)
+dotnet ef database drop -f --project src\BatuLabAiExcel
+```
+
+### Setup Scripts
+```powershell
+# Complete environment setup
+.\scripts\setup_everything.ps1
+
+# Setup MCP backend only
+.\scripts\setup_mcp.ps1
+
+# Setup database
+.\scripts\setup_database.ps1
+
+# Verify backend health
+.\scripts\run_backend_check.ps1
+
+# Install Python dependencies
+.\scripts\setup_python_and_mcp.ps1
+```
+
+### Testing and Debugging
+```powershell
+# Run comprehensive test scenarios
+.\scripts\test_scenarios.ps1
+
+# Diagnose Python installation
+.\scripts\diagnose_python.ps1
+
+# Quick fix for common issues
+.\scripts\quick_fix.ps1
+```
+
+## Key Configuration
+
+### appsettings.json Structure
+- **Claude**: API key, model settings, retry policies
+- **Gemini**: Google AI configuration
+- **Groq**: Groq API settings
+- **Mcp**: Python path, server script, working directory
+- **Database**: PostgreSQL connection string
+- **Authentication**: JWT settings, password policies
+- **Stripe**: Payment configuration, webhook secrets
+- **License**: Trial duration, pricing, validation settings
+
+### Environment Variables
+- `CLAUDE_API_KEY`: Override Claude API key
+- `ASPNETCORE_ENVIRONMENT`: Set to Development for debug mode
+- `MCP_WORKING_DIRECTORY`: Override Excel files directory
+
+## MCP Integration
+
+The application communicates with excel-mcp-server through JSON-RPC over stdio. Key tools include:
+
+### Workbook Operations
+- `create_workbook`: Create new Excel files
+- `get_workbook_metadata`: Get workbook information
+- `create_worksheet`: Add new worksheets
+
+### Data Operations  
+- `read_data_from_excel`: Read cell ranges
+- `write_data_to_excel`: Write data to cells
+
+### Advanced Operations
+- `format_range`: Apply cell formatting
+- `apply_formula`: Add Excel formulas
+- `create_chart`: Generate charts
+- `create_pivot_table`: Create pivot tables
+
+## Authentication & Licensing
+
+### User Flow
+1. **Registration**: Creates account with 1-day trial license
+2. **Trial Validation**: Checks license status on startup
+3. **Subscription**: Stripe integration for monthly/yearly/lifetime plans
+4. **License Validation**: Local + remote validation with grace period
+
+### Security Features
+- BCrypt password hashing
+- JWT token authentication
+- Windows Credential Manager for secure storage
+- API key masking in logs
+- Rate limiting and retry policies
+
+## Development Guidelines
+
+### Code Standards
+- Use XML documentation for public APIs
+- Follow MVVM pattern strictly
+- Implement Result pattern for error handling
+- Use CancellationToken for all async operations
+- Apply dependency injection throughout
+
+### Error Handling
+- All services return Result<T> types
+- Comprehensive logging with Serilog
+- User-friendly error messages in UI
+- Graceful degradation for non-critical failures
+
+### UI/UX Conventions
+- Dark theme with golden ratio proportions
+- Card-based layout for modern appearance
+- Loading states for async operations
+- Clear visual feedback for user actions
+
+## Troubleshooting
+
+### Common Issues
+1. **MCP server not starting**: Check Python installation and excel-mcp-server package
+2. **Database connection failed**: Verify PostgreSQL service and connection string
+3. **API key errors**: Check Claude API key format and validity
+4. **License validation issues**: Review database connectivity and Stripe configuration
+
+### Log Locations
+- Application logs: `logs/office-ai-batu-lab-{date}.log`
+- MCP communication: Debug level logging
+- Authentication events: Information level logging
+
+### Debug Mode
+Set `ASPNETCORE_ENVIRONMENT=Development` for:
+- Detailed logging output
+- Additional error information
+- Database auto-migration
+- Development-specific configuration
