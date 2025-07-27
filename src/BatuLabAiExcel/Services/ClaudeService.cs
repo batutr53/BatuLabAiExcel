@@ -15,6 +15,7 @@ public class ClaudeService : IClaudeService
 {
     private readonly HttpClient _httpClient;
     private readonly AppConfiguration.ClaudeSettings _settings;
+    private readonly IUserSettingsService _userSettings;
     private readonly ILogger<ClaudeService> _logger;
     private static DateTime _lastRequestTime = DateTime.MinValue;
     private static readonly object _requestLock = new object();
@@ -28,10 +29,12 @@ public class ClaudeService : IClaudeService
     public ClaudeService(
         HttpClient httpClient,
         IOptions<AppConfiguration.ClaudeSettings> settings,
+        IUserSettingsService userSettings,
         ILogger<ClaudeService> logger)
     {
         _httpClient = httpClient;
         _settings = settings.Value;
+        _userSettings = userSettings;
         _logger = logger;
 
         ConfigureHttpClient();
@@ -46,7 +49,9 @@ public class ClaudeService : IClaudeService
         {
             // Rate limiting: ensure delay between requests
             await EnsureRequestDelayAsync(cancellationToken);
-            if (string.IsNullOrEmpty(_settings.ApiKey))
+            // Get API key from user settings first, fallback to config
+            var apiKey = await _userSettings.GetApiKeyAsync("Claude") ?? _settings.ApiKey;
+            if (string.IsNullOrEmpty(apiKey))
             {
                 return Result<ClaudeResponse>.Failure("Claude API key is not configured");
             }
@@ -78,8 +83,13 @@ public class ClaudeService : IClaudeService
                 jsonRequest.Length > 1000 ? $"{jsonRequest[..1000]}..." : jsonRequest);
 
             var content = new StringContent(jsonRequest, Encoding.UTF8, "application/json");
+            
+            // Set authorization header with dynamic API key
+            using var requestMessage = new HttpRequestMessage(HttpMethod.Post, "/v1/messages") { Content = content };
+            requestMessage.Headers.Add("Authorization", $"Bearer {apiKey}");
+            requestMessage.Headers.Add("anthropic-version", _settings.ApiVersion);
 
-            using var response = await _httpClient.PostAsync("/v1/messages", content, cancellationToken);
+            using var response = await _httpClient.SendAsync(requestMessage, cancellationToken);
 
             var responseContent = await response.Content.ReadAsStringAsync(cancellationToken);
 
@@ -138,14 +148,11 @@ public class ClaudeService : IClaudeService
     {
         _httpClient.BaseAddress = new Uri(_settings.BaseUrl);
         _httpClient.DefaultRequestHeaders.Clear();
-        _httpClient.DefaultRequestHeaders.Add("x-api-key", _settings.ApiKey);
-        _httpClient.DefaultRequestHeaders.Add("anthropic-version", _settings.ApiVersion);
         _httpClient.DefaultRequestHeaders.Add("anthropic-beta", "tools-2024-04-04");
         _httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
         _httpClient.Timeout = TimeSpan.FromSeconds(_settings.TimeoutSeconds);
 
-        _logger.LogInformation("Claude service configured with API key: {MaskedKey}", 
-            _settings.GetMaskedApiKey());
+        _logger.LogInformation("Claude service configured");
     }
 
     private async Task EnsureRequestDelayAsync(CancellationToken cancellationToken)

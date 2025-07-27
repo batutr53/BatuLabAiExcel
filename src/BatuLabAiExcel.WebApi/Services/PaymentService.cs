@@ -33,7 +33,7 @@ public class PaymentService : IPaymentService
         StripeConfiguration.ApiKey = _stripeSettings.SecretKey;
     }
 
-    public async Task<Result<List<SubscriptionPlan>>> GetSubscriptionPlansAsync(CancellationToken cancellationToken = default)
+    public Task<Result<List<SubscriptionPlan>>> GetSubscriptionPlansAsync(CancellationToken cancellationToken = default)
     {
         try
         {
@@ -90,12 +90,12 @@ public class PaymentService : IPaymentService
                 }
             };
 
-            return Result<List<SubscriptionPlan>>.Success(plans);
+            return Task.FromResult(Result<List<SubscriptionPlan>>.Success(plans));
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error getting subscription plans");
-            return Result<List<SubscriptionPlan>>.Failure("Failed to get subscription plans");
+            return Task.FromResult(Result<List<SubscriptionPlan>>.Failure("Failed to get subscription plans"));
         }
     }
 

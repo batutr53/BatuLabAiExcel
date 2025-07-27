@@ -533,4 +533,56 @@ User message: {userMessage}";
         
         LicenseStatusText = statusText;
     }
+
+    [RelayCommand]
+    private async Task OpenSettingsAsync()
+    {
+        try
+        {
+            var settingsWindow = App.StaticServiceProvider.GetRequiredService<SettingsWindow>();
+            settingsWindow.Owner = System.Windows.Application.Current.MainWindow;
+            
+            var result = settingsWindow.ShowDialog();
+            if (result == true)
+            {
+                _logger.LogInformation("Settings saved successfully");
+                // Optionally refresh any settings-dependent components
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error opening settings window");
+            Messages.Add(ChatMessage.CreateSystemMessage($"❌ Error opening settings: {ex.Message}"));
+        }
+    }
+
+    [RelayCommand]
+    private async Task ShowAboutAsync()
+    {
+        try
+        {
+            var aboutMessage = @"🏢 Office Ai - Batu Lab.
+Version 1.0.0
+
+AI-powered Excel automation with Claude integration.
+This application helps you work with Excel files using natural language.
+
+🛡️ Privacy & Security:
+• Your data never leaves your computer
+• API keys are stored securely in Windows Credential Manager
+• All Excel operations are performed locally
+
+📧 Support: support@batulab.com
+🌐 Website: https://batulab.com
+
+© 2025 Batu Lab. All rights reserved.";
+
+            Messages.Add(ChatMessage.CreateSystemMessage(aboutMessage));
+            RequestScrollToBottom?.Invoke();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error showing about dialog");
+        }
+    }
 }

@@ -4,8 +4,8 @@
         xmlns:local="clr-namespace:BatuLabAiExcel"
         Title="Office Ai - Batu Lab." 
         Icon="icon.png"
-        Height="600" 
-        Width="900" 
+        Height="658" 
+        Width="987" 
         MinHeight="400" 
         MinWidth="600"
         WindowStartupLocation="CenterScreen"
@@ -15,16 +15,16 @@
         WindowStyle="None"
         AllowsTransparency="True"
         Background="Transparent">
-    
+
     <Window.Resources>
         <!-- Built-in converters -->
         <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
-        
+
         <!-- Custom value converters -->
         <local:InverseBooleanConverter x:Key="InverseBoolConverter"/>
         <local:BoolToBackgroundConverter x:Key="BoolToBackgroundConverter"/>
         <local:BoolToForegroundConverter x:Key="BoolToForegroundConverter"/>
-        
+
         <!-- Dark Night Theme Color Palette -->
         <SolidColorBrush x:Key="PrimaryBrush" Color="#8B5CF6"/>
         <SolidColorBrush x:Key="PrimaryHoverBrush" Color="#7C3AED"/>
@@ -40,15 +40,18 @@
         <SolidColorBrush x:Key="ShadowBrush" Color="#000000"/>
         <SolidColorBrush x:Key="BackgroundBrush" Color="#020617"/>
         <SolidColorBrush x:Key="AccentBrush" Color="#3B82F6"/>
-        
+
         <!-- Modern Button Style with Golden Ratio -->
         <Style x:Key="ModernButtonStyle" TargetType="Button">
             <Setter Property="Background" Value="{StaticResource PrimaryBrush}"/>
             <Setter Property="Foreground" Value="White"/>
             <Setter Property="BorderThickness" Value="0"/>
-            <Setter Property="Height" Value="48"/>  <!-- Golden ratio base -->
-            <Setter Property="MinWidth" Value="78"/> <!-- 48 * 1.618 = 78 -->
-            <Setter Property="Padding" Value="24,12"/> <!-- 48/2 = 24 -->
+            <Setter Property="Height" Value="48"/>
+            <!-- Golden ratio base -->
+            <Setter Property="MinWidth" Value="78"/>
+            <!-- 48 * 1.618 = 78 -->
+            <Setter Property="Padding" Value="24,12"/>
+            <!-- 48/2 = 24 -->
             <Setter Property="Margin" Value="4"/>
             <Setter Property="FontWeight" Value="SemiBold"/>
             <Setter Property="FontSize" Value="14"/>
@@ -102,7 +105,7 @@
                 </Setter.Value>
             </Setter>
         </Style>
-        
+
         <!-- Secondary Button Style -->
         <Style x:Key="SecondaryButtonStyle" TargetType="Button" BasedOn="{StaticResource ModernButtonStyle}">
             <Setter Property="Background" Value="{StaticResource CardBrush}"/>
@@ -116,7 +119,7 @@
                 </Trigger>
             </Style.Triggers>
         </Style>
-        
+
         <!-- Danger Button Style -->
         <Style x:Key="DangerButtonStyle" TargetType="Button" BasedOn="{StaticResource ModernButtonStyle}">
             <Setter Property="Background" Value="{StaticResource DangerBrush}"/>
@@ -126,7 +129,7 @@
                 </Trigger>
             </Style.Triggers>
         </Style>
-        
+
         <!-- Modern TextBox Style -->
         <Style x:Key="ModernTextBoxStyle" TargetType="TextBox">
             <Setter Property="Background" Value="{StaticResource CardBrush}"/>
@@ -169,7 +172,7 @@
                 </Setter.Value>
             </Setter>
         </Style>
-        
+
         <!-- Modern ComboBox Style -->
         <Style x:Key="ModernComboBoxStyle" TargetType="ComboBox">
             <Setter Property="Background" Value="{StaticResource CardBrush}"/>
@@ -278,12 +281,12 @@
                 </Setter.Value>
             </Setter>
         </Style>
-        
+
         <!-- ComboBox TextBox Template -->
         <ControlTemplate x:Key="ComboBoxTextBox" TargetType="TextBox">
             <Border x:Name="PART_ContentHost" Focusable="False" Background="{TemplateBinding Background}" />
         </ControlTemplate>
-        
+
         <!-- Card Style -->
         <Style x:Key="CardStyle" TargetType="Border">
             <Setter Property="Background" Value="{StaticResource CardBrush}"/>
@@ -299,23 +302,27 @@
             </Setter>
         </Style>
     </Window.Resources>
-    
+
     <Window.InputBindings>
         <KeyBinding Key="C" Modifiers="Ctrl+Shift" Command="{Binding CopyAllMessagesCommand}"/>
     </Window.InputBindings>
-    
+
     <!-- Main Container with Dark Theme -->
     <Border Style="{StaticResource CardStyle}" 
             Margin="10"
             Background="{StaticResource BackgroundBrush}">
         <Grid>
             <Grid.RowDefinitions>
-                <RowDefinition Height="Auto"/> <!-- Custom Title Bar -->
-                <RowDefinition Height="Auto"/> <!-- Header -->
-                <RowDefinition Height="*"/>    <!-- Main Content -->
-                <RowDefinition Height="Auto"/> <!-- Input Area -->
+                <RowDefinition Height="Auto"/>
+                <!-- Custom Title Bar -->
+                <RowDefinition Height="Auto"/>
+                <!-- Header -->
+                <RowDefinition Height="*"/>
+                <!-- Main Content -->
+                <RowDefinition Height="Auto"/>
+                <!-- Input Area -->
             </Grid.RowDefinitions>
-            
+
             <!-- Custom Title Bar -->
             <Border Grid.Row="0" 
                     CornerRadius="8,8,0,0"
@@ -333,7 +340,7 @@
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
-                    
+
                     <!-- Title -->
                     <StackPanel Grid.Column="0" 
                                 Orientation="Horizontal" 
@@ -349,7 +356,7 @@
                                    FontSize="14"
                                    VerticalAlignment="Center"/>
                     </StackPanel>
-                    
+
                     <!-- Window Controls -->
                     <StackPanel Grid.Column="1" 
                                 Orientation="Horizontal">
@@ -422,7 +429,7 @@
                     </StackPanel>
                 </Grid>
             </Border>
-            
+
             <!-- Header Section -->
             <Border Grid.Row="1" 
                     Margin="20,15,20,5">
@@ -431,7 +438,7 @@
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
-                    
+
                     <!-- App Info -->
                     <StackPanel Grid.Column="0">
                         <TextBlock Text="Excel AI Assistant - Batu Lab" 
@@ -443,7 +450,7 @@
                                    FontSize="14" 
                                    Foreground="{StaticResource TextSecondaryBrush}"/>
                     </StackPanel>
-                    
+
                     <!-- Quick Actions -->
                     <StackPanel Grid.Column="1" 
                                 Orientation="Horizontal">
@@ -451,18 +458,18 @@
                                 Click="UpgradeButton_Click"
                                 Style="{StaticResource ModernButtonStyle}"
                                 Background="{StaticResource AccentBrush}"
-                                Margin="0,0,10,0"/>
+                                Margin="0,0,10,0" Height="56" Width="92"/>
                         <Button Content="📁 Browse Files" 
                                 Command="{Binding BrowseFileCommand}"
                                 Style="{StaticResource SecondaryButtonStyle}"
-                                Margin="0,0,10,0"/>
+                                Margin="0,0,10,0" Height="54" Width="119"/>
                         <Button Content="📂 Open Folder" 
                                 Command="{Binding OpenFolderCommand}"
                                 Style="{StaticResource SecondaryButtonStyle}"/>
                     </StackPanel>
                 </Grid>
             </Border>
-            
+
             <!-- Main Content Area -->
             <Grid Grid.Row="2" Margin="20,5">
                 <Grid.ColumnDefinitions>
@@ -470,7 +477,7 @@
                     <ColumnDefinition Width="8"/>
                     <ColumnDefinition Width="240" MinWidth="220"/>
                 </Grid.ColumnDefinitions>
-                
+
                 <!-- Chat Area -->
                 <Border Grid.Column="0" Style="{StaticResource CardStyle}">
                     <Grid>
@@ -479,7 +486,7 @@
                             <RowDefinition Height="*"/>
                             <RowDefinition Height="Auto"/>
                         </Grid.RowDefinitions>
-                        
+
                         <!-- Chat Header -->
                         <Border Grid.Row="0" 
                                 Background="{StaticResource CardHoverBrush}"
@@ -490,7 +497,7 @@
                                        FontWeight="SemiBold"
                                        Foreground="{StaticResource TextPrimaryBrush}"/>
                         </Border>
-                        
+
                         <!-- Chat Messages -->
                         <ScrollViewer Grid.Row="1" 
                                       x:Name="ChatScrollViewer" 
@@ -551,7 +558,7 @@
                                 </ItemsControl.ItemTemplate>
                             </ItemsControl>
                         </ScrollViewer>
-                        
+
                         <!-- Status -->
                         <Border Grid.Row="2" 
                                 Background="{StaticResource WarningBrush}"
@@ -567,7 +574,7 @@
                         </Border>
                     </Grid>
                 </Border>
-                
+
                 <!-- Sidebar -->
                 <StackPanel Grid.Column="2">
                     <!-- File Info Card -->
@@ -578,7 +585,7 @@
                                        FontWeight="SemiBold"
                                        Foreground="{StaticResource TextPrimaryBrush}"
                                        Margin="0,0,0,10"/>
-                            
+
                             <Border Background="{StaticResource CardHoverBrush}"
                                     CornerRadius="6"
                                     Padding="12,8"
@@ -591,7 +598,7 @@
                             </Border>
                         </StackPanel>
                     </Border>
-                    
+
                     <!-- AI Provider Card -->
                     <Border Style="{StaticResource CardStyle}" Margin="0,0,0,10">
                         <StackPanel>
@@ -600,7 +607,7 @@
                                        FontWeight="SemiBold"
                                        Foreground="{StaticResource TextPrimaryBrush}"
                                        Margin="0,0,0,10"/>
-                            
+
                             <ComboBox x:Name="AiProviderComboBox"
                                       SelectedValue="{Binding SelectedAiProvider}"
                                       SelectionChanged="AiProviderComboBox_SelectionChanged"
@@ -614,7 +621,7 @@
                                 <ComboBoxItem Content="Claude Desktop" Tag="Claude Desktop"/>
                                 <ComboBoxItem Content="ChatGPT Desktop" Tag="ChatGPT Desktop"/>
                             </ComboBox>
-                            
+
                             <TextBlock Text="{Binding CurrentAiProviderStatus}" 
                                        FontStyle="Italic" 
                                        Foreground="{StaticResource SecondaryBrush}"
@@ -622,7 +629,7 @@
                                        TextWrapping="Wrap"/>
                         </StackPanel>
                     </Border>
-                    
+
                     <!-- Quick Tips Card -->
                     <Border Style="{StaticResource CardStyle}" Margin="0,0,0,0">
                         <StackPanel>
@@ -631,7 +638,7 @@
                                        FontWeight="SemiBold"
                                        Foreground="{StaticResource TextPrimaryBrush}"
                                        Margin="0,0,0,10"/>
-                            
+
                             <StackPanel>
                                 <TextBlock Text="• Drag &amp; drop Excel files"
                                            FontSize="11"
@@ -653,7 +660,7 @@
                     </Border>
                 </StackPanel>
             </Grid>
-            
+
             <!-- Input Area -->
             <Border Grid.Row="3" 
                     Style="{StaticResource CardStyle}"
@@ -664,7 +671,7 @@
                         <ColumnDefinition Width="Auto"/>
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
-                    
+
                     <TextBox Grid.Column="0" 
                              x:Name="InputTextBox"
                              Text="{Binding InputText, UpdateSourceTrigger=PropertyChanged}" 
@@ -686,14 +693,14 @@
                                         Modifiers="Control"/>
                         </TextBox.InputBindings>
                     </TextBox>
-                    
+
                     <Button Grid.Column="1" 
                             Content="Send" 
                             Command="{Binding SendCommand}"
                             IsEnabled="{Binding IsBusy, Converter={StaticResource InverseBoolConverter}}"
                             Style="{StaticResource ModernButtonStyle}"
                             Width="78"/>
-                            
+
                     <Button Grid.Column="2" 
                             Content="Cancel" 
                             Command="{Binding CancelCommand}"

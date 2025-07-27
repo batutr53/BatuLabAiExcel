@@ -12,7 +12,29 @@
     <Version>1.0.0</Version>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
+    
+    <!-- Anti-virus false positive mitigation -->
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <AssemblyVersion>1.0.0.0</AssemblyVersion>
+    <FileVersion>1.0.0.0</FileVersion>
+    <ProductVersion>1.0.0</ProductVersion>
+    
+    <!-- Code signing and security -->
+    <SignAssembly>false</SignAssembly>
+    <DelaySign>false</DelaySign>
+    
+    <!-- Deterministic builds for reproducibility -->
+    <Deterministic>true</Deterministic>
+    <PathMap>$(MSBuildProjectDirectory)=.</PathMap>
+    
+    <!-- Trust and security attributes -->
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <NeutralLanguage>en-US</NeutralLanguage>
   </PropertyGroup>
+
+  <ItemGroup>
+    <None Remove="nul" />
+  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.Hosting" Version="9.0.0" />

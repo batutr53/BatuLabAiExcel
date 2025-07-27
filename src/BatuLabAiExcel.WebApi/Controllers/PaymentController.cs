@@ -128,23 +128,23 @@ public class PaymentController : ControllerBase
     /// </summary>
     [HttpPost("billing-portal")]
     [Authorize]
-    public async Task<ActionResult<ApiResponse<string>>> GetBillingPortalUrl(
+    public Task<ActionResult<ApiResponse<string>>> GetBillingPortalUrl(
         [FromBody] string returnUrl,
         CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrWhiteSpace(returnUrl))
         {
-            return BadRequest(ApiResponse<string>.ErrorResult("Return URL is required"));
+            return Task.FromResult<ActionResult<ApiResponse<string>>>(BadRequest(ApiResponse<string>.ErrorResult("Return URL is required")));
         }
 
         var userIdClaim = User.FindFirst("user_id")?.Value;
         if (string.IsNullOrEmpty(userIdClaim) || !Guid.TryParse(userIdClaim, out var userId))
         {
-            return Unauthorized(ApiResponse<string>.ErrorResult("Invalid user token"));
+            return Task.FromResult<ActionResult<ApiResponse<string>>>(Unauthorized(ApiResponse<string>.ErrorResult("Invalid user token")));
         }
 
         // This would require additional implementation to get customer ID from user
         // For now, return not implemented
-        return StatusCode(501, ApiResponse<string>.ErrorResult("Billing portal not implemented yet"));
+        return Task.FromResult<ActionResult<ApiResponse<string>>>(StatusCode(501, ApiResponse<string>.ErrorResult("Billing portal not implemented yet")));
     }
 }

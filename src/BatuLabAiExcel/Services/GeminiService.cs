@@ -15,6 +15,7 @@ public class GeminiService : IGeminiService
 {
     private readonly HttpClient _httpClient;
     private readonly AppConfiguration.GeminiSettings _settings;
+    private readonly IUserSettingsService _userSettings;
     private readonly ILogger<GeminiService> _logger;
     private static DateTime _lastRequestTime = DateTime.MinValue;
     private static readonly object _requestLock = new object();
@@ -28,10 +29,12 @@ public class GeminiService : IGeminiService
     public GeminiService(
         HttpClient httpClient,
         IOptions<AppConfiguration.GeminiSettings> settings,
+        IUserSettingsService userSettings,
         ILogger<GeminiService> logger)
     {
         _httpClient = httpClient;
         _settings = settings.Value;
+        _userSettings = userSettings;
         _logger = logger;
 
         ConfigureHttpClient();
@@ -47,7 +50,9 @@ public class GeminiService : IGeminiService
             // Rate limiting: ensure delay between requests
             await EnsureRequestDelayAsync(cancellationToken);
             
-            if (string.IsNullOrEmpty(_settings.ApiKey))
+            // Get API key from user settings first, fallback to config
+            var apiKey = await _userSettings.GetApiKeyAsync("Gemini") ?? _settings.ApiKey;
+            if (string.IsNullOrEmpty(apiKey))
             {
                 return Result<GeminiResponse>.Failure("Gemini API key is not configured");
             }
@@ -78,7 +83,7 @@ public class GeminiService : IGeminiService
 
             var content = new StringContent(jsonRequest, Encoding.UTF8, "application/json");
             
-            var endpoint = $"/models/{_settings.Model}:generateContent";
+            var endpoint = $"/models/{_settings.Model}:generateContent?key={apiKey}";
             using var response = await _httpClient.PostAsync(endpoint, content, cancellationToken);
 
             var responseContent = await response.Content.ReadAsStringAsync(cancellationToken);
@@ -138,12 +143,10 @@ public class GeminiService : IGeminiService
     {
         _httpClient.BaseAddress = new Uri(_settings.BaseUrl);
         _httpClient.DefaultRequestHeaders.Clear();
-        _httpClient.DefaultRequestHeaders.Add("x-goog-api-key", _settings.ApiKey);
         _httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
         _httpClient.Timeout = TimeSpan.FromSeconds(_settings.TimeoutSeconds);
 
-        _logger.LogInformation("Gemini service configured with API key: {MaskedKey}", 
-            _settings.GetMaskedApiKey());
+        _logger.LogInformation("Gemini service configured");
     }
 
     private async Task EnsureRequestDelayAsync(CancellationToken cancellationToken)

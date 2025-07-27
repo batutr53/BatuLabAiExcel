@@ -72,7 +72,7 @@ try
 
     // Database
     builder.Services.AddDbContext<AppDbContext>(options =>
-        options.UseNpgsql(builder.Configuration.GetSection("Database")["ConnectionString"]));
+        options.UseSqlite(builder.Configuration.GetSection("Database")["ConnectionString"]));
 
     // Configuration sections
     builder.Services.Configure<AppConfiguration.DatabaseSettings>(

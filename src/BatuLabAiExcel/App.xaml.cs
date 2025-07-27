@@ -16,6 +16,7 @@ public partial class App : Application
 {
     private IHost? _host;
     public IServiceProvider ServiceProvider => _host?.Services ?? throw new InvalidOperationException("Services not initialized");
+    public static IServiceProvider StaticServiceProvider { get; private set; } = null!;
 
     protected override void OnStartup(StartupEventArgs e)
     {
@@ -58,6 +59,7 @@ public partial class App : Application
             // Build host
             Log.Information("Building DI host...");
             _host = Program.CreateHostBuilder(Environment.GetCommandLineArgs()).Build();
+            StaticServiceProvider = _host.Services;
             Log.Information("DI host built successfully");
 
             // Start with login window by default

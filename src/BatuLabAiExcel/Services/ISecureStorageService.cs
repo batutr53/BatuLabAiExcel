@@ -34,4 +34,19 @@ public interface ISecureStorageService
     /// Get machine identifier for license validation
     /// </summary>
     string GetMachineId();
+
+    /// <summary>
+    /// Get a value by key
+    /// </summary>
+    Task<string?> GetAsync(string key);
+
+    /// <summary>
+    /// Set a value by key
+    /// </summary>
+    Task SetAsync(string key, string value);
+
+    /// <summary>
+    /// Remove a value by key
+    /// </summary>
+    Task RemoveAsync(string key);
 }

@@ -49,7 +49,9 @@
       "Bash(cmd /c:*)",
       "Bash(curl:*)",
       "Bash(psql:*)",
-      "Bash(start:*)"
+      "Bash(start:*)",
+      "Bash(grep:*)",
+      "Bash(find:*)"
     ],
     "deny": []
   }

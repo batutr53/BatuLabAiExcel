@@ -61,6 +61,7 @@ public static class Program
                 services.AddScoped<ILicenseService, WebApiLicenseService>();
                 services.AddScoped<IPaymentService, WebApiPaymentService>();
                 services.AddSingleton<ISecureStorageService, SecureStorageService>();
+                services.AddSingleton<IUserSettingsService, UserSettingsService>();
 
                 // AI Services - Use scoped for HTTP clients
                 services.AddHttpClient<ClaudeService>();
@@ -93,12 +94,14 @@ public static class Program
                 services.AddTransient<LoginViewModel>();
                 services.AddTransient<RegisterViewModel>();
                 services.AddTransient<SubscriptionViewModel>();
+                services.AddTransient<SettingsViewModel>();
                 
                 // Windows
                 services.AddTransient<MainWindow>();
                 services.AddTransient<LoginWindow>();
                 services.AddTransient<RegisterWindow>();
                 services.AddTransient<SubscriptionWindow>();
+                services.AddTransient<SettingsWindow>();
                 
                 // Infrastructure
                 services.AddSingleton<ProcessHelper>();

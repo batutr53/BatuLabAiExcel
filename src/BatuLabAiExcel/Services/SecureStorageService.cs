@@ -185,4 +185,88 @@ public class SecureStorageService : ISecureStorageService
             return Convert.ToBase64String(hash);
         }
     }
+
+    public async Task<string?> GetAsync(string key)
+    {
+        try
+        {
+            return await Task.Run(() =>
+            {
+                using var regKey = Registry.CurrentUser.OpenSubKey(RegistryPath);
+                var value = regKey?.GetValue(key)?.ToString();
+                
+                if (string.IsNullOrEmpty(value))
+                    return null;
+
+                try
+                {
+                    // Try to decrypt if it's encrypted data
+                    var encryptedData = Convert.FromBase64String(value);
+                    var decryptedData = ProtectedData.Unprotect(encryptedData, null, DataProtectionScope.CurrentUser);
+                    return Encoding.UTF8.GetString(decryptedData);
+                }
+                catch
+                {
+                    // If decryption fails, return as plain text
+                    return value;
+                }
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error retrieving value for key: {Key}", key);
+            return null;
+        }
+    }
+
+    public async Task SetAsync(string key, string value)
+    {
+        try
+        {
+            await Task.Run(() =>
+            {
+                try
+                {
+                    // Try to encrypt the value
+                    var encryptedData = ProtectedData.Protect(Encoding.UTF8.GetBytes(value), null, DataProtectionScope.CurrentUser);
+                    var base64Data = Convert.ToBase64String(encryptedData);
+                    
+                    using var regKey = Registry.CurrentUser.CreateSubKey(RegistryPath);
+                    regKey.SetValue(key, base64Data);
+                }
+                catch
+                {
+                    // If encryption fails, store as plain text
+                    using var regKey = Registry.CurrentUser.CreateSubKey(RegistryPath);
+                    regKey.SetValue(key, value);
+                }
+            });
+
+            _logger.LogDebug("Value stored securely for key: {Key}", key);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error storing value for key: {Key}", key);
+            throw;
+        }
+    }
+
+    public async Task RemoveAsync(string key)
+    {
+        try
+        {
+            await Task.Run(() =>
+            {
+                using var regKey = Registry.CurrentUser.OpenSubKey(RegistryPath, true);
+                regKey?.DeleteValue(key, false);
+            });
+
+            _logger.LogDebug("Value removed for key: {Key}", key);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error removing value for key: {Key}", key);
+            throw;
+        }
+    }
 }
