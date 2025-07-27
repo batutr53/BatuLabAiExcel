@@ -219,7 +219,7 @@ public partial class SubscriptionViewModel : ObservableObject
             }
             else
             {
-                var days = CurrentLicense.RemainingDays;
+                var days = CurrentLicense.DaysRemaining;
                 RemainingTimeText = days > 1 ? $"{days} days remaining" : 
                                    days == 1 ? "Expires today" : "Expired";
             }

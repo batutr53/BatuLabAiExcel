@@ -14,6 +14,7 @@ public class AppConfiguration
     public ApplicationSettings Application { get; set; } = new();
     public EmailSettings Email { get; set; } = new();
     public StripeSettings Stripe { get; set; } = new();
+    public WebApiSettings WebApi { get; set; } = new();
 
     public class ClaudeSettings
     {
@@ -248,5 +249,15 @@ public class AppConfiguration
             
             return $"{SecretKey[..4]}***{SecretKey[^4..]}";
         }
+    }
+
+    public class WebApiSettings
+    {
+        public string BaseUrl { get; set; } = "https://localhost:7001";
+        public int TimeoutSeconds { get; set; } = 30;
+        public int RetryCount { get; set; } = 3;
+        public int RetryDelaySeconds { get; set; } = 2;
+        public bool EnableRetryPolicy { get; set; } = true;
+        public bool ValidateSslCertificate { get; set; } = true;
     }
 }

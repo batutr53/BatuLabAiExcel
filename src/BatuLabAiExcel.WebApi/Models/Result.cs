@@ -1,4 +1,4 @@
-namespace BatuLabAiExcel.Models;
+namespace BatuLabAiExcel.WebApi.Models;
 
 /// <summary>
 /// Generic result type for operations that can succeed or fail

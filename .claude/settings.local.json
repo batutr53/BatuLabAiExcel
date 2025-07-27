@@ -42,7 +42,14 @@
       "Bash(setx:*)",
       "Bash(refreshenv)",
       "Bash(\"C:\\Users\\batua\\.dotnet\\tools\\dotnet-ef.exe\" migrations add InitialCreate)",
-      "Bash(\"C:\\Users\\batua\\.dotnet\\tools\\dotnet-ef.exe\" database update)"
+      "Bash(\"C:\\Users\\batua\\.dotnet\\tools\\dotnet-ef.exe\" database update)",
+      "Bash(rm:*)",
+      "Bash(del E:batulabaiexcelsrcBatuLabAiExcelControllersWebhookController.cs)",
+      "Bash(Remove-Item:*)",
+      "Bash(cmd /c:*)",
+      "Bash(curl:*)",
+      "Bash(psql:*)",
+      "Bash(start:*)"
     ],
     "deny": []
   }

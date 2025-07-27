@@ -525,7 +525,7 @@ User message: {userMessage}";
         
         if (CurrentLicense.Type != Models.Entities.LicenseType.Lifetime)
         {
-            var days = CurrentLicense.RemainingDays;
+            var days = CurrentLicense.DaysRemaining;
             var timeText = days > 1 ? $"{days} days" : 
                           days == 1 ? "1 day" : "Expired";
             statusText += $" - {timeText} remaining";

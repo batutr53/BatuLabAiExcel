@@ -1,7 +1,7 @@
 using System.ComponentModel.DataAnnotations;
-using BatuLabAiExcel.Models.Entities;
+using BatuLabAiExcel.WebApi.Models.Entities;
 
-namespace BatuLabAiExcel.Models.DTOs;
+namespace BatuLabAiExcel.WebApi.Models.DTOs;
 
 /// <summary>
 /// Login request DTO
@@ -48,11 +48,6 @@ public class RegisterRequest
 
     [Required(ErrorMessage = "You must accept the terms and conditions")]
     public bool AcceptTerms { get; set; } = false;
-
-    /// <summary>
-    /// Full name derived from FirstName and LastName for API compatibility
-    /// </summary>
-    public string FullName => $"{FirstName} {LastName}".Trim();
 }
 
 /// <summary>
@@ -63,7 +58,6 @@ public class AuthResponse
     public bool Success { get; set; }
     public string Message { get; set; } = string.Empty;
     public string? Token { get; set; }
-    public DateTime? ExpiresAt { get; set; }
     public UserInfo? User { get; set; }
     public LicenseInfo? License { get; set; }
     public List<string> Errors { get; set; } = new();
@@ -81,7 +75,6 @@ public class UserInfo
     public string FullName { get; set; } = string.Empty;
     public DateTime CreatedAt { get; set; }
     public DateTime? LastLoginAt { get; set; }
-    public bool IsActive { get; set; } = true;
 
     public static UserInfo FromEntity(User user)
     {
@@ -105,17 +98,13 @@ public class LicenseInfo
 {
     public Guid Id { get; set; }
     public LicenseType Type { get; set; }
-    public string LicenseKey { get; set; } = string.Empty;
-    public bool IsActive { get; set; } = true;
-    public DateTime? ExpiresAt { get; set; }
-    public DateTime CreatedAt { get; set; }
-    public int DaysRemaining { get; set; }
-    
-    // Legacy properties for backward compatibility
     public LicenseStatus Status { get; set; }
+    public string LicenseKey { get; set; } = string.Empty;
     public DateTime StartDate { get; set; }
+    public DateTime? ExpiresAt { get; set; }
     public bool IsValid { get; set; }
     public bool IsExpired { get; set; }
+    public int RemainingDays { get; set; }
     public TimeSpan RemainingTime { get; set; }
     public string TypeDisplayName { get; set; } = string.Empty;
     public string StatusDisplayName { get; set; } = string.Empty;
@@ -132,7 +121,7 @@ public class LicenseInfo
             ExpiresAt = license.ExpiresAt,
             IsValid = license.IsValid,
             IsExpired = license.IsExpired,
-            DaysRemaining = license.RemainingDays,
+            RemainingDays = license.RemainingDays,
             RemainingTime = license.RemainingTime,
             TypeDisplayName = GetLicenseTypeDisplayName(license.Type),
             StatusDisplayName = GetLicenseStatusDisplayName(license.Status)

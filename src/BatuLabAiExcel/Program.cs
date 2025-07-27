@@ -2,14 +2,12 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using Microsoft.EntityFrameworkCore;
 using Serilog;
 using System.Windows;
 using System.Net.Http;
 using BatuLabAiExcel.Services;
 using BatuLabAiExcel.ViewModels;
 using BatuLabAiExcel.Infrastructure;
-using BatuLabAiExcel.Data;
 using BatuLabAiExcel.Views;
 
 namespace BatuLabAiExcel;
@@ -52,33 +50,26 @@ public static class Program
                 services.Configure<AppConfiguration.AiProviderSettings>(context.Configuration.GetSection("AiProvider"));
                 services.Configure<AppConfiguration.McpSettings>(context.Configuration.GetSection("Mcp"));
                 services.Configure<AppConfiguration.DesktopAutomationSettings>(context.Configuration.GetSection("DesktopAutomation"));
-                services.Configure<AppConfiguration.EmailSettings>(context.Configuration.GetSection("Email"));
-                services.Configure<AppConfiguration.StripeSettings>(context.Configuration.GetSection("Stripe"));
+                services.Configure<AppConfiguration.WebApiSettings>(context.Configuration.GetSection("WebApi"));
 
-                // Database
-                var connectionString = context.Configuration.GetConnectionString("DefaultConnection") ?? 
-                                      context.Configuration.GetSection("Database:ConnectionString").Value ?? 
-                                      "Host=localhost;Database=office_ai_batulabdb;Username=office_ai_user;Password=your_secure_password";
-                                      
-                services.AddDbContext<AppDbContext>(options =>
-                    options.UseNpgsql(connectionString));
+                // Web API Client (replaces direct database access)
+                services.AddHttpClient<WebApiClient>();
+                services.AddScoped<IWebApiClient, WebApiClient>();
 
-                // Authentication & Security Services
-                services.AddScoped<IAuthenticationService, AuthenticationService>();
-                services.AddScoped<ILicenseService, LicenseService>();
-                services.AddScoped<IPaymentService, PaymentService>();
+                // Secure API-based Services (no direct database access)
+                services.AddScoped<IAuthenticationService, WebApiAuthenticationService>();
+                services.AddScoped<ILicenseService, WebApiLicenseService>();
+                services.AddScoped<IPaymentService, WebApiPaymentService>();
                 services.AddSingleton<ISecureStorageService, SecureStorageService>();
-                services.AddScoped<IEmailService, EmailService>();
 
-                // HTTP Clients
-                services.AddHttpClient<IClaudeService, ClaudeService>();
-                services.AddHttpClient<IGeminiService, GeminiService>();
-                services.AddHttpClient<IGroqService, GroqService>();
-
-                // AI Services
-                services.AddSingleton<IClaudeService, ClaudeService>();
-                services.AddSingleton<IGeminiService, GeminiService>();
-                services.AddSingleton<IGroqService, GroqService>();
+                // AI Services - Use scoped for HTTP clients
+                services.AddHttpClient<ClaudeService>();
+                services.AddHttpClient<GeminiService>();
+                services.AddHttpClient<GroqService>();
+                
+                services.AddScoped<IClaudeService, ClaudeService>();
+                services.AddScoped<IGeminiService, GeminiService>();
+                services.AddScoped<IGroqService, GroqService>();
                 services.AddSingleton<ClaudeCliService>();
                 
                 // AI Provider Factory

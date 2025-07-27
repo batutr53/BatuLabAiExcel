@@ -131,8 +131,8 @@ public class ClaudeCliService : IAiService
                 {
                     excel_mcp_server = new
                     {
-                        command = "excel-mcp-server",
-                        args = new[] { "stdio" },
+                        command = "python",
+                        args = new[] { "-m", "excel_mcp", "stdio" },
                         env = new { },
                         disabled = false
                     }
