@@ -23,6 +23,9 @@
     <SignAssembly>false</SignAssembly>
     <DelaySign>false</DelaySign>
     
+    <!-- Post-build code signing (if certificate available) -->
+    <CodeSigningCertThumbprint Condition="'$(CodeSigningCertThumbprint)' == ''"></CodeSigningCertThumbprint>
+    
     <!-- Deterministic builds for reproducibility -->
     <Deterministic>true</Deterministic>
     <PathMap>$(MSBuildProjectDirectory)=.</PathMap>
@@ -70,5 +73,13 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Resource>
   </ItemGroup>
+
+  <!-- Post-build code signing target -->
+  <Target Name="SignExecutable" AfterTargets="Build" Condition="'$(Configuration)' == 'Release'">
+    <Message Text="Checking for code signing certificate..." Importance="high" />
+    <Exec Command="powershell.exe -NoProfile -ExecutionPolicy Bypass -File &quot;$(MSBuildProjectDirectory)\..\..\scripts\sign_executable.ps1&quot; -AutoDetect" 
+          ContinueOnError="true" 
+          IgnoreExitCode="true" />
+  </Target>
 
 </Project>

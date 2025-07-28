@@ -51,7 +51,25 @@
       "Bash(psql:*)",
       "Bash(start:*)",
       "Bash(grep:*)",
-      "Bash(find:*)"
+      "Bash(find:*)",
+      "Bash(del configure_antivirus_exclusions.ps1)",
+      "Bash(ren:*)",
+      "Bash(.setup.bat)",
+      "Bash(where python)",
+      "Bash(where python3)",
+      "Bash(where py)",
+      "Bash(winget install:*)",
+      "Bash(\"C:\\Users\\batuh\\.local\\bin\\uv.exe\" python install 3.12)",
+      "Bash(\"C:\\Users\\batuh\\.local\\bin\\python3.12.exe\" --version)",
+      "Bash(\"C:\\Users\\batuh\\.local\\bin\\uv.exe\" tool install excel-mcp-server)",
+      "Bash(\"C:\\Users\\batuh\\.local\\bin\\excel-mcp-server.exe\" --help)",
+      "Bash(npm create:*)",
+      "Bash(npm install:*)",
+      "Bash(npx tailwindcss:*)",
+      "Bash(npm run dev:*)",
+      "Bash(npm run build:*)",
+      "Bash(cat:*)",
+      "Bash(node:*)"
     ],
     "deny": []
   }
