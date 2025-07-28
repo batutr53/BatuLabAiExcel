@@ -69,7 +69,10 @@
       "Bash(npm run dev:*)",
       "Bash(npm run build:*)",
       "Bash(cat:*)",
-      "Bash(node:*)"
+      "Bash(node:*)",
+      "Bash(npm run lint)",
+      "Bash(npm uninstall:*)",
+      "Bash(tasklist:*)"
     ],
     "deny": []
   }

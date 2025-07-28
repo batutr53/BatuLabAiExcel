@@ -19,7 +19,7 @@ class ApiClient {
 
   constructor() {
     this.client = axios.create({
-      baseURL: 'https://localhost:59640/api', // WebAPI base URL
+      baseURL: (import.meta.env.VITE_API_BASE_URL as string) || 'https://localhost:59640/api',
       timeout: 30000,
       headers: {
         'Content-Type': 'application/json',
@@ -35,34 +35,37 @@ class ApiClient {
         }
         return config;
       },
-      (error) => Promise.reject(error)
+      (error: unknown) => Promise.reject(new Error(error instanceof Error ? error.message : 'Request failed'))
     );
 
     // Response interceptor for global error handling
     this.client.interceptors.response.use(
       (response) => response,
-      (error) => {
-        if (error.response?.status === 401) {
-          localStorage.removeItem('admin_token');
-          window.location.href = '/login';
+      (error: unknown) => {
+        if (error && typeof error === 'object' && 'response' in error) {
+          const axiosError = error as { response: { status: number } };
+          if (axiosError.response?.status === 401) {
+            localStorage.removeItem('admin_token');
+            window.location.href = '/login';
+          }
         }
-        return Promise.reject(error);
+        return Promise.reject(new Error(error instanceof Error ? error.message : 'Request failed'));
       }
     );
   }
 
   // Generic API methods
-  private async get<T>(url: string, params?: any): Promise<T> {
+  private async get<T>(url: string, params?: Record<string, unknown> | FilterState | LoginCredentials): Promise<T> {
     const response: AxiosResponse<T> = await this.client.get(url, { params });
     return response.data;
   }
 
-  private async post<T>(url: string, data?: any): Promise<T> {
+  private async post<T>(url: string, data?: Record<string, unknown> | LoginCredentials): Promise<T> {
     const response: AxiosResponse<T> = await this.client.post(url, data);
     return response.data;
   }
 
-  private async put<T>(url: string, data?: any): Promise<T> {
+  private async put<T>(url: string, data?: Record<string, unknown>): Promise<T> {
     const response: AxiosResponse<T> = await this.client.put(url, data);
     return response.data;
   }
@@ -73,8 +76,8 @@ class ApiClient {
   }
 
   // Authentication API
-  async login(credentials: LoginCredentials): Promise<ApiResponse<{ user: AdminUser; token: string }>> {
-    return this.post('/auth/admin/login', credentials);
+  async login(credentials: LoginCredentials): Promise<{ success: boolean; message: string; token?: string; user?: AdminUser; errors: string[] }> {
+    return this.post('/auth/login', { email: credentials.email, password: credentials.password });
   }
 
   async logout(): Promise<ApiResponse<void>> {
@@ -158,20 +161,20 @@ class ApiClient {
   }
 
   // Analytics API
-  async getRevenueAnalytics(period: 'week' | 'month' | 'year'): Promise<ApiResponse<any>> {
+  async getRevenueAnalytics(period: 'week' | 'month' | 'year'): Promise<ApiResponse<{ data: Array<{ date: string; value: number }> }>> {
     return this.get(`/admin/analytics/revenue?period=${period}`);
   }
 
-  async getUserGrowthAnalytics(period: 'week' | 'month' | 'year'): Promise<ApiResponse<any>> {
+  async getUserGrowthAnalytics(period: 'week' | 'month' | 'year'): Promise<ApiResponse<{ data: Array<{ date: string; value: number }> }>> {
     return this.get(`/admin/analytics/users?period=${period}`);
   }
 
-  async getLicenseDistribution(): Promise<ApiResponse<any>> {
+  async getLicenseDistribution(): Promise<ApiResponse<Record<string, unknown>>> {
     return this.get('/admin/analytics/license-distribution');
   }
 
   // System Management API
-  async getSystemLogs(filters: FilterState): Promise<ApiResponse<PaginatedResponse<any>>> {
+  async getSystemLogs(filters: FilterState): Promise<ApiResponse<PaginatedResponse<Record<string, unknown>>>> {
     return this.get('/admin/system/logs', filters);
   }
 

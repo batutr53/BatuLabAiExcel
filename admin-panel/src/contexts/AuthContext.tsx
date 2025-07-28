@@ -1,5 +1,5 @@
-import React, { createContext, useContext, useReducer, useEffect } from 'react';
-import { AdminUser, AuthState } from '../types';
+import { createContext, useContext, useReducer, useEffect } from 'react';
+import type { AdminUser, AuthState } from '../types';
 import { authAPI } from '../services/api';
 
 // Auth Actions
@@ -91,7 +91,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   // Check authentication on app start
   useEffect(() => {
-    checkAuth();
+    void checkAuth();
   }, []);
 
   const login = async (email: string, password: string) => {
@@ -100,15 +100,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       
       const response = await authAPI.login({ email, password });
       
-      if (response.success && response.data) {
-        const { user, token } = response.data;
-        localStorage.setItem('admin_token', token);
-        dispatch({ type: 'LOGIN_SUCCESS', payload: { user, token } });
+      if (response.success && response.token && response.user) {
+        localStorage.setItem('admin_token', response.token);
+        dispatch({ type: 'LOGIN_SUCCESS', payload: { user: response.user, token: response.token } });
       } else {
-        throw new Error(response.error || 'Login failed');
+        const errorMessage = response.errors?.join(', ') || response.message || 'Login failed';
+        throw new Error(errorMessage);
       }
-    } catch (error: any) {
-      const errorMessage = error.response?.data?.error || error.message || 'Login failed';
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error 
+        ? error.message 
+        : 'Login failed';
       dispatch({ type: 'LOGIN_FAILURE', payload: errorMessage });
       throw error;
     }
@@ -167,6 +169,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 }
 
 // Custom Hook
+// eslint-disable-next-line react-refresh/only-export-components
 export function useAuth() {
   const context = useContext(AuthContext);
   if (context === undefined) {
@@ -175,15 +178,3 @@ export function useAuth() {
   return context;
 }
 
-// Auth Guard Hook
-export function useAuthGuard() {
-  const { state } = useAuth();
-  
-  useEffect(() => {
-    if (!state.loading && !state.isAuthenticated) {
-      window.location.href = '/login';
-    }
-  }, [state.loading, state.isAuthenticated]);
-
-  return state;
-}

@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tailwind CSS Test</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: {
+                            50: '#f0f9ff',
+                            500: '#0ea5e9',
+                            600: '#0284c7',
+                            700: '#0369a1',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-gray-100 p-8">
+    <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl font-bold text-gray-900 mb-8">Tailwind CSS Test Sayfası</h1>
+        
+        <!-- Stats Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <div class="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 hover:shadow-lg transition-all duration-300">
+                <div class="flex items-center justify-between mb-4">
+                    <div class="w-12 h-12 bg-primary-100 rounded-xl flex items-center justify-center">
+                        <div class="w-6 h-6 bg-primary-600 rounded"></div>
+                    </div>
+                    <span class="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full">+12%</span>
+                </div>
+                <h3 class="text-sm font-medium text-gray-600 mb-1">Toplam Kullanıcı</h3>
+                <p class="text-2xl font-bold text-gray-900">1,234</p>
+            </div>
+            
+            <div class="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 hover:shadow-lg transition-all duration-300">
+                <div class="flex items-center justify-between mb-4">
+                    <div class="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center">
+                        <div class="w-6 h-6 bg-green-600 rounded"></div>
+                    </div>
+                    <span class="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full">+8%</span>
+                </div>
+                <h3 class="text-sm font-medium text-gray-600 mb-1">Aktif Lisans</h3>
+                <p class="text-2xl font-bold text-gray-900">856</p>
+            </div>
+            
+            <div class="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 hover:shadow-lg transition-all duration-300">
+                <div class="flex items-center justify-between mb-4">
+                    <div class="w-12 h-12 bg-yellow-100 rounded-xl flex items-center justify-center">
+                        <div class="w-6 h-6 bg-yellow-600 rounded"></div>
+                    </div>
+                    <span class="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full">+23%</span>
+                </div>
+                <h3 class="text-sm font-medium text-gray-600 mb-1">Aylık Gelir</h3>
+                <p class="text-2xl font-bold text-gray-900">₺45,230</p>
+            </div>
+        </div>
+        
+        <!-- Buttons -->
+        <div class="space-x-4 mb-8">
+            <button class="bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-700 hover:to-primary-800 text-white px-6 py-3 rounded-xl font-medium transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105">
+                Primary Button
+            </button>
+            <button class="bg-white border border-gray-200 text-gray-700 hover:bg-gray-50 px-6 py-3 rounded-xl font-medium transition-all duration-200">
+                Secondary Button
+            </button>
+        </div>
+        
+        <!-- Form Elements -->
+        <div class="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 mb-8">
+            <h2 class="text-lg font-semibold text-gray-900 mb-4">Form Öğeleri</h2>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                    <input type="email" class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all duration-200" placeholder="email@example.com">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Şifre</label>
+                    <input type="password" class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all duration-200" placeholder="••••••••">
+                </div>
+            </div>
+        </div>
+        
+        <!-- Sidebar Preview -->
+        <div class="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+            <h2 class="text-lg font-semibold text-gray-900 mb-4">Navigasyon Menüsü</h2>
+            <div class="space-y-2">
+                <div class="bg-gradient-to-r from-primary-500 to-primary-600 text-white px-4 py-3 rounded-xl flex items-center">
+                    <div class="w-5 h-5 bg-white/20 rounded mr-3"></div>
+                    <span class="font-medium">Dashboard</span>
+                </div>
+                <div class="text-gray-700 hover:bg-gray-50 px-4 py-3 rounded-xl flex items-center transition-colors">
+                    <div class="w-5 h-5 bg-gray-300 rounded mr-3"></div>
+                    <span>Kullanıcılar</span>
+                </div>
+                <div class="text-gray-700 hover:bg-gray-50 px-4 py-3 rounded-xl flex items-center transition-colors">
+                    <div class="w-5 h-5 bg-gray-300 rounded mr-3"></div>
+                    <span>Lisanslar</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

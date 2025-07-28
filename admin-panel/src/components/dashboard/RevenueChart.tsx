@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { analyticsAPI } from '../../services/api';
@@ -16,7 +16,7 @@ export function RevenueChart() {
     refetchInterval: 300000, // 5 minutes
   });
 
-  const chartData = data?.data || [];
+  const chartData = (data?.data || []) as Array<{ date: string; value: number }>;
 
   const periods = [
     { key: 'week' as Period, label: 'Haftalık' },
@@ -26,9 +26,9 @@ export function RevenueChart() {
 
   if (error) {
     return (
-      <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-200">
+      <div className="bg-white rounded-xl p-6 shadow-md border border-gray-200">
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold text-gray-900">Gelir Analizi</h3>
+          <h3 className="text-xl font-semibold text-gray-900">Gelir Analizi</h3>
         </div>
         <div className="text-center py-8 text-red-500">
           <p>Veri yüklenirken hata oluştu</p>
@@ -38,12 +38,12 @@ export function RevenueChart() {
   }
 
   return (
-    <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-200">
+    <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 hover:shadow-lg transition-all duration-300">
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center space-x-2">
-          <ChartBarIcon className="w-5 h-5 text-gray-400" />
-          <h3 className="text-lg font-semibold text-gray-900">Gelir Analizi</h3>
+          <ChartBarIcon className="w-6 h-6 text-gray-400" />
+          <h3 className="text-xl font-semibold text-gray-900">Gelir Analizi</h3>
         </div>
         
         {/* Period Selector */}
@@ -53,7 +53,7 @@ export function RevenueChart() {
               key={period.key}
               onClick={() => setSelectedPeriod(period.key)}
               className={clsx(
-                'px-3 py-1 text-xs font-medium rounded-md transition-colors',
+                'px-3 py-1 text-sm font-medium rounded-md transition-colors',
                 selectedPeriod === period.key
                   ? 'bg-white text-gray-900 shadow-sm'
                   : 'text-gray-600 hover:text-gray-900'
@@ -71,7 +71,7 @@ export function RevenueChart() {
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
         </div>
       ) : (
-        <div className="h-64">
+        <div className="h-64 group">
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={chartData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
@@ -79,7 +79,7 @@ export function RevenueChart() {
                 dataKey="date" 
                 stroke="#6b7280"
                 fontSize={12}
-                tickFormatter={(value) => {
+                tickFormatter={(value: string) => {
                   const date = new Date(value);
                   if (selectedPeriod === 'week') {
                     return date.toLocaleDateString('tr-TR', { weekday: 'short' });
@@ -93,7 +93,7 @@ export function RevenueChart() {
               <YAxis 
                 stroke="#6b7280"
                 fontSize={12}
-                tickFormatter={(value) => `₺${(value / 1000).toFixed(0)}k`}
+                tickFormatter={(value: number) => `₺${(value / 1000).toFixed(0)}k`}
               />
               <Tooltip
                 contentStyle={{
@@ -102,7 +102,7 @@ export function RevenueChart() {
                   borderRadius: '8px',
                   boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
                 }}
-                labelFormatter={(value) => {
+                labelFormatter={(value: string) => {
                   const date = new Date(value);
                   return date.toLocaleDateString('tr-TR', {
                     day: 'numeric',
@@ -115,10 +115,10 @@ export function RevenueChart() {
               <Line
                 type="monotone"
                 dataKey="value"
-                stroke="#3b82f6"
-                strokeWidth={2}
-                dot={{ fill: '#3b82f6', strokeWidth: 2, r: 4 }}
-                activeDot={{ r: 6, stroke: '#3b82f6', strokeWidth: 2, fill: 'white' }}
+                stroke="#0ea5e9"
+                strokeWidth={3}
+                dot={{ fill: '#0ea5e9', strokeWidth: 2, r: 4 }}
+                activeDot={{ r: 6, stroke: '#0ea5e9', strokeWidth: 2, fill: 'white' }}
               />
             </LineChart>
           </ResponsiveContainer>
@@ -127,22 +127,22 @@ export function RevenueChart() {
 
       {/* Summary */}
       {!isLoading && chartData.length > 0 && (
-        <div className="mt-4 pt-4 border-t border-gray-100">
+        <div className="mt-6 pt-4 border-t border-gray-100">
           <div className="grid grid-cols-3 gap-4 text-center">
-            <div>
-              <p className="text-2xl font-bold text-gray-900">
-                ₺{Math.max(...chartData.map(d => d.value)).toLocaleString()}
+            <div className="group hover:scale-105 transition-transform duration-200">
+              <p className="text-2xl font-bold text-gray-900 group-hover:text-primary-600 transition-colors">
+                ₺{Math.max(...chartData.map((d) => d.value)).toLocaleString()}
               </p>
               <p className="text-xs text-gray-600">En Yüksek</p>
             </div>
-            <div>
-              <p className="text-2xl font-bold text-gray-900">
+            <div className="group hover:scale-105 transition-transform duration-200">
+              <p className="text-2xl font-bold text-gray-900 group-hover:text-success-600 transition-colors">
                 ₺{Math.round(chartData.reduce((sum, d) => sum + d.value, 0) / chartData.length).toLocaleString()}
               </p>
               <p className="text-xs text-gray-600">Ortalama</p>
             </div>
-            <div>
-              <p className="text-2xl font-bold text-gray-900">
+            <div className="group hover:scale-105 transition-transform duration-200">
+              <p className="text-2xl font-bold text-gray-900 group-hover:text-warning-600 transition-colors">
                 ₺{chartData.reduce((sum, d) => sum + d.value, 0).toLocaleString()}
               </p>
               <p className="text-xs text-gray-600">Toplam</p>

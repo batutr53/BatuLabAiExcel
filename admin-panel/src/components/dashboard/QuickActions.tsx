@@ -1,4 +1,3 @@
-import React from 'react';
 import { Link } from 'react-router-dom';
 import { 
   PlusIcon,
@@ -7,6 +6,7 @@ import {
   BellIcon,
   AdjustmentsHorizontalIcon
 } from '@heroicons/react/24/outline';
+import { clsx } from 'clsx';
 
 export function QuickActions() {
   const actions = [
@@ -51,10 +51,10 @@ export function QuickActions() {
   };
 
   return (
-    <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-200">
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="text-lg font-semibold text-gray-900">Hızlı İşlemler</h2>
-        <PlusIcon className="w-5 h-5 text-gray-400" />
+    <div className="bg-white rounded-xl p-6 shadow-md border border-gray-200">
+      <div className="flex items-center justify-between mb-6">
+        <h2 className="text-xl font-semibold text-gray-900">Hızlı İşlemler</h2>
+        <PlusIcon className="w-6 h-6 text-gray-400" />
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -62,14 +62,15 @@ export function QuickActions() {
           <Link
             key={index}
             to={action.href}
-            className={`p-4 rounded-lg border-2 border-dashed transition-all duration-200 hover:scale-105 ${getColorClasses(action.color)}`}
+            className={clsx(
+              `p-5 rounded-lg border-2 border-dashed transition-all duration-200 hover:scale-105 hover:shadow-lg flex flex-col items-center text-center space-y-3`,
+              getColorClasses(action.color)
+            )}
           >
-            <div className="flex flex-col items-center text-center space-y-2">
-              <action.icon className="w-8 h-8" />
-              <div>
-                <h3 className="font-medium text-sm">{action.title}</h3>
-                <p className="text-xs opacity-75 mt-1">{action.description}</p>
-              </div>
+            <action.icon className="w-9 h-9" />
+            <div>
+              <h3 className="font-semibold text-base">{action.title}</h3>
+              <p className="text-xs opacity-85 mt-1">{action.description}</p>
             </div>
           </Link>
         ))}

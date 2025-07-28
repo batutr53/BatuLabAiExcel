@@ -7,6 +7,7 @@ using System.Text;
 using System.Text.Json;
 using BatuLabAiExcel.WebApi.Data;
 using BatuLabAiExcel.WebApi.Models;
+using BatuLabAiExcel.WebApi.Models.Entities;
 using BatuLabAiExcel.WebApi.Services;
 using BatuLabAiExcel.WebApi.Middleware;
 using Microsoft.AspNetCore.RateLimiting;
@@ -17,6 +18,57 @@ Log.Logger = new LoggerConfiguration()
     .WriteTo.Console()
     .WriteTo.File("logs/webapi-.log", rollingInterval: RollingInterval.Day)
     .CreateLogger();
+
+// Method to seed admin user
+static async Task SeedAdminUserAsync(IServiceProvider serviceProvider)
+{
+    var context = serviceProvider.GetRequiredService<AppDbContext>();
+    var logger = serviceProvider.GetRequiredService<ILogger<Program>>();
+
+    // Check if admin user already exists
+    var adminEmail = "admin@batulab.com";
+    var existingAdmin = await context.Users.FirstOrDefaultAsync(u => u.Email == adminEmail);
+    
+    if (existingAdmin == null)
+    {
+        // Create admin user
+        var adminUser = new User
+        {
+            Id = Guid.NewGuid(),
+            Email = adminEmail,
+            FirstName = "Admin",
+            LastName = "User",
+            PasswordHash = BCrypt.Net.BCrypt.HashPassword("admin123"), // Default password: admin123
+            IsEmailVerified = true,
+            IsActive = true,
+            CreatedAt = DateTime.UtcNow
+        };
+
+        // Create lifetime license for admin
+        var adminLicense = new License
+        {
+            Id = Guid.NewGuid(),
+            UserId = adminUser.Id,
+            Type = LicenseType.Lifetime,
+            Status = LicenseStatus.Active,
+            LicenseKey = $"ADMIN-{Guid.NewGuid().ToString("N")[..16].ToUpper()}",
+            IsActive = true,
+            StartDate = DateTime.UtcNow,
+            ExpiresAt = null, // Lifetime license never expires
+            CreatedAt = DateTime.UtcNow
+        };
+
+        context.Users.Add(adminUser);
+        context.Licenses.Add(adminLicense);
+        await context.SaveChangesAsync();
+        
+        logger.LogInformation("Admin user created with email: {Email} and password: admin123", adminEmail);
+    }
+    else
+    {
+        logger.LogInformation("Admin user already exists: {Email}", adminEmail);
+    }
+}
 
 try
 {
@@ -126,10 +178,23 @@ try
     {
         options.AddPolicy("DefaultPolicy", policy =>
         {
-            policy.WithOrigins(corsSettings.AllowedOrigins)
-                  .WithMethods(corsSettings.AllowedMethods)
-                  .WithHeaders(corsSettings.AllowedHeaders)
-                  .AllowCredentials();
+            // More permissive CORS for development
+            if (builder.Environment.IsDevelopment())
+            {
+                policy.SetIsOriginAllowed(origin => 
+                    origin.StartsWith("http://localhost") || 
+                    origin.StartsWith("https://localhost"))
+                      .AllowAnyMethod()
+                      .AllowAnyHeader()
+                      .AllowCredentials();
+            }
+            else
+            {
+                policy.WithOrigins(corsSettings.AllowedOrigins)
+                      .WithMethods(corsSettings.AllowedMethods)
+                      .WithHeaders(corsSettings.AllowedHeaders)
+                      .AllowCredentials();
+            }
         });
     });
 
@@ -203,6 +268,9 @@ try
         var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
         await context.Database.MigrateAsync();
         Log.Information("Database migration completed");
+        
+        // Seed admin user
+        await SeedAdminUserAsync(scope.ServiceProvider);
     }
 
     Log.Information("Starting Office AI - Batu Lab Web API");

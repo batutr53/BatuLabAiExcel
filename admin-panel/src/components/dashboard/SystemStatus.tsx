@@ -1,11 +1,10 @@
-import React from 'react';
 import { 
   CheckCircleIcon, 
   ExclamationTriangleIcon, 
   XCircleIcon,
   ClockIcon 
 } from '@heroicons/react/24/outline';
-import { SystemStatus as SystemStatusType } from '../../types';
+import type { SystemStatus as SystemStatusType } from '../../types';
 import { clsx } from 'clsx';
 
 interface SystemStatusProps {
@@ -16,7 +15,7 @@ interface SystemStatusProps {
 export function SystemStatus({ status, loading }: SystemStatusProps) {
   if (loading) {
     return (
-      <div className="bg-white rounded-lg p-4 shadow-sm border border-gray-200 animate-pulse">
+      <div className="bg-white rounded-xl p-4 shadow-md border border-gray-200 animate-pulse">
         <div className="flex items-center space-x-3">
           <div className="w-5 h-5 bg-gray-200 rounded"></div>
           <div className="h-4 bg-gray-200 rounded w-32"></div>
@@ -79,7 +78,7 @@ export function SystemStatus({ status, loading }: SystemStatusProps) {
 
   return (
     <div className={clsx(
-      'rounded-lg p-4 shadow-sm border transition-all',
+      'rounded-xl p-4 shadow-md border transition-all',
       overallHealthy 
         ? 'bg-green-50 border-green-200' 
         : 'bg-yellow-50 border-yellow-200'

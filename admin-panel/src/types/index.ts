@@ -21,5 +21,5 @@ export interface TableColumn<T> {
   key: keyof T;
   label: string;
   sortable?: boolean;
-  render?: (value: any, item: T) => React.ReactNode;
+  render?: (value: unknown, item: T) => React.ReactNode;
 }
