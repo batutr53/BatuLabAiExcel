@@ -41,11 +41,11 @@ function App() {
                 
                 {/* User Management */}
                 <Route path="users" element={<UsersPage />} />
-                <Route path="users/new" element={<div className="p-6"><h1 className="text-2xl font-bold">Yeni Kullanıcı</h1><p className="text-gray-600 mt-2">Bu sayfa geliştirilme aşamasında...</p></div>} />
+                <Route path="users/new" element={<UserFormPage />} />
                 
                 {/* License Management */}
                 <Route path="licenses" element={<LicensesPage />} />
-                <Route path="licenses/new" element={<div className="p-6"><h1 className="text-2xl font-bold">Yeni Lisans</h1><p className="text-gray-600 mt-2">Bu sayfa geliştirilme aşamasında...</p></div>} />
+                <Route path="licenses/new" element={<LicenseFormPage />} />
                 
                 {/* Payment Management */}
                 <Route path="payments" element={<PaymentsPage />} />
@@ -54,8 +54,8 @@ function App() {
                 <Route path="analytics" element={<div className="p-6"><h1 className="text-2xl font-bold">Analitik</h1><p className="text-gray-600 mt-2">Bu sayfa geliştirilme aşamasında...</p></div>} />
                 
                 {/* Notifications */}
-                <Route path="notifications" element={<div className="p-6"><h1 className="text-2xl font-bold">Bildirimler</h1><p className="text-gray-600 mt-2">Bu sayfa geliştirilme aşamasında...</p></div>} />
-                <Route path="notifications/send" element={<div className="p-6"><h1 className="text-2xl font-bold">Bildirim Gönder</h1><p className="text-gray-600 mt-2">Bu sayfa geliştirilme aşamasında...</p></div>} />
+                <Route path="notifications" element={<NotificationsPage />} />
+                <Route path="notifications/send" element={<SendNotificationPage />} />
                 
                 {/* Settings */}
                 <Route path="settings" element={<SettingsPage />} />

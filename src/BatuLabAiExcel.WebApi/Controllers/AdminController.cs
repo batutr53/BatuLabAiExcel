@@ -19,11 +19,21 @@ public class AdminController : ControllerBase
 {
     private readonly AppDbContext _context;
     private readonly ILogger<AdminController> _logger;
+    private readonly IAuthenticationService _authService;
+    private readonly ILicenseService _licenseService;
+    private readonly IPaymentService _paymentService;
+    private readonly IAdminSettingsService _adminSettingsService;
+    private readonly INotificationService _notificationService;
 
-    public AdminController(AppDbContext context, ILogger<AdminController> logger)
+    public AdminController(AppDbContext context, ILogger<AdminController> logger, IAuthenticationService authService, ILicenseService licenseService, IPaymentService paymentService, IAdminSettingsService adminSettingsService, INotificationService notificationService)
     {
         _context = context;
         _logger = logger;
+        _authService = authService;
+        _licenseService = licenseService;
+        _paymentService = paymentService;
+        _adminSettingsService = adminSettingsService;
+        _notificationService = notificationService;
     }
 
     /// <summary>
@@ -297,6 +307,50 @@ public class AdminController : ControllerBase
     }
 
     /// <summary>
+    /// Refund a payment
+    /// </summary>
+    [HttpPost("payments/{id}/refund")]
+    public async Task<ActionResult<ApiResponse<object>>> RefundPayment(Guid id, [FromBody] string? reason = null)
+    {
+        try
+        {
+            var result = await _paymentService.RefundPaymentAsync(id, reason ?? "Admin initiated refund");
+            if (!result.IsSuccess)
+            {
+                return BadRequest(ApiResponse<object>.ErrorResult(result.Error ?? "Failed to refund payment"));
+            }
+            return Ok(ApiResponse<object>.SuccessResult(new { }, "Payment refunded successfully"));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error refunding payment {PaymentId}", id);
+            return StatusCode(500, ApiResponse<object>.ErrorResult("Failed to refund payment"));
+        }
+    }
+
+    /// <summary>
+    /// Refund a payment
+    /// </summary>
+    [HttpPost("payments/{id}/refund")]
+    public async Task<ActionResult<ApiResponse<object>>> RefundPayment(Guid id, [FromBody] string? reason = null)
+    {
+        try
+        {
+            var result = await _paymentService.RefundPaymentAsync(id, reason ?? "Admin initiated refund");
+            if (!result.IsSuccess)
+            {
+                return BadRequest(ApiResponse<object>.ErrorResult(result.Error ?? "Failed to refund payment"));
+            }
+            return Ok(ApiResponse<object>.SuccessResult(new { }, "Payment refunded successfully"));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error refunding payment {PaymentId}", id);
+            return StatusCode(500, ApiResponse<object>.ErrorResult("Failed to refund payment"));
+        }
+    }
+
+    /// <summary>
     /// Get revenue analytics
     /// </summary>
     [HttpGet("analytics/revenue")]
@@ -426,6 +480,81 @@ public class AdminController : ControllerBase
     }
 
     /// <summary>
+    /// Send notification to specific users
+    /// </summary>
+    [HttpPost("notifications/send")]
+    public async Task<ActionResult<ApiResponse<object>>> SendNotification([FromBody] SendNotificationRequest request)
+    {
+        try
+        {
+            foreach (var userId in request.UserIds)
+            {
+                await _notificationService.SendNotificationAsync(userId, "Admin Notification", request.Message, request.Type);
+            }
+            return Ok(ApiResponse<object>.SuccessResult(new { }, "Notification sent successfully"));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error sending notification");
+            return StatusCode(500, ApiResponse<object>.ErrorResult("Failed to send notification"));
+        }
+    }
+
+    /// <summary>
+    /// Broadcast notification to all users
+    /// </summary>
+    [HttpPost("notifications/broadcast")]
+    public async Task<ActionResult<ApiResponse<object>>> BroadcastNotification([FromBody] BroadcastNotificationRequest request)
+    {
+        try
+        {
+            await _notificationService.BroadcastNotificationAsync("Admin Broadcast", request.Message, request.Type);
+            return Ok(ApiResponse<object>.SuccessResult(new { }, "Notification broadcast successfully"));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error broadcasting notification");
+            return StatusCode(500, ApiResponse<object>.ErrorResult("Failed to broadcast notification"));
+        }
+    }
+
+    /// <summary>
+    /// Get all admin settings
+    /// </summary>
+    [HttpGet("settings")]
+    public async Task<ActionResult<ApiResponse<AdminSettings>>> GetSettings()
+    {
+        try
+        {
+            var settings = await _adminSettingsService.GetSettingsAsync();
+            return Ok(settings);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting admin settings");
+            return StatusCode(500, ApiResponse<AdminSettings>.ErrorResult("Failed to get settings"));
+        }
+    }
+
+    /// <summary>
+    /// Update admin settings
+    /// </summary>
+    [HttpPut("settings")]
+    public async Task<ActionResult<ApiResponse<AdminSettings>>> UpdateSettings([FromBody] AdminSettings request)
+    {
+        try
+        {
+            var result = await _adminSettingsService.UpdateSettingsAsync(request);
+            return Ok(result);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error updating admin settings");
+            return StatusCode(500, ApiResponse<AdminSettings>.ErrorResult("Failed to update settings"));
+        }
+    }
+
+    /// <summary>
     /// Update user status
     /// </summary>
     [HttpPost("users/{id}/suspend")]
@@ -474,6 +603,98 @@ public class AdminController : ControllerBase
         {
             _logger.LogError(ex, "Error reactivating user {UserId}", id);
             return StatusCode(500, ApiResponse<object>.ErrorResult("Failed to reactivate user"));
+        }
+    }
+
+    /// <summary>
+    /// Create a new user
+    /// </summary>
+    [HttpPost("users")]
+    public async Task<ActionResult<ApiResponse<object>>> CreateUser([FromBody] CreateUserRequest request)
+    {
+        try
+        {
+            var result = await _authService.RegisterAsync(request.Email, request.Password, $"{request.FirstName} {request.LastName}");
+            if (!result.IsSuccess)
+            {
+                return BadRequest(ApiResponse<object>.ErrorResult(result.Error ?? "Failed to create user"));
+            }
+            return Ok(ApiResponse<object>.SuccessResult(result.Data, "User created successfully"));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error creating user");
+            return StatusCode(500, ApiResponse<object>.ErrorResult("Failed to create user"));
+        }
+    }
+
+    /// <summary>
+    /// Update an existing user
+    /// </summary>
+    [HttpPut("users/{id}")]
+    public async Task<ActionResult<ApiResponse<object>>> UpdateUser(Guid id, [FromBody] UpdateUserRequest request)
+    {
+        try
+        {
+            var user = await _context.Users.FindAsync(id);
+            if (user == null)
+            {
+                return NotFound(ApiResponse<object>.ErrorResult("User not found"));
+            }
+
+            if (!string.IsNullOrEmpty(request.Email))
+            {
+                user.Email = request.Email;
+            }
+            if (!string.IsNullOrEmpty(request.Password))
+            {
+                user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password);
+            }
+            if (!string.IsNullOrEmpty(request.FirstName))
+            {
+                user.FirstName = request.FirstName;
+            }
+            if (!string.IsNullOrEmpty(request.LastName))
+            {
+                user.LastName = request.LastName;
+            }
+            if (request.IsActive.HasValue)
+            {
+                user.IsActive = request.IsActive.Value;
+            }
+
+            await _context.SaveChangesAsync();
+            return Ok(ApiResponse<object>.SuccessResult(user, "User updated successfully"));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error updating user {UserId}", id);
+            return StatusCode(500, ApiResponse<object>.ErrorResult("Failed to update user"));
+        }
+    }
+
+    /// <summary>
+    /// Delete a user permanently
+    /// </summary>
+    [HttpDelete("users/{id}")]
+    public async Task<ActionResult<ApiResponse<object>>> DeleteUser(Guid id)
+    {
+        try
+        {
+            var user = await _context.Users.FindAsync(id);
+            if (user == null)
+            {
+                return NotFound(ApiResponse<object>.ErrorResult("User not found"));
+            }
+
+            _context.Users.Remove(user);
+            await _context.SaveChangesAsync();
+            return Ok(ApiResponse<object>.SuccessResult(new { }, "User deleted successfully"));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error deleting user {UserId}", id);
+            return StatusCode(500, ApiResponse<object>.ErrorResult("Failed to delete user"));
         }
     }
 
@@ -581,6 +802,69 @@ public class AdminController : ControllerBase
         {
             _logger.LogError(ex, "Error deleting license {LicenseId}", id);
             return StatusCode(500, ApiResponse<object>.ErrorResult("Failed to delete license"));
+        }
+    }
+
+    /// <summary>
+    /// Create a new license
+    /// </summary>
+    [HttpPost("licenses")]
+    public async Task<ActionResult<ApiResponse<object>>> CreateLicense([FromBody] CreateLicenseRequest request)
+    {
+        try
+        {
+            var result = await _licenseService.CreateLicenseAsync(request.UserId, request.Type, null, null, null, CancellationToken.None);
+            if (!result.IsSuccess)
+            {
+                return BadRequest(ApiResponse<object>.ErrorResult(result.Error ?? "Failed to create license"));
+            }
+            return Ok(ApiResponse<object>.SuccessResult(result.Data, "License created successfully"));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error creating license");
+            return StatusCode(500, ApiResponse<object>.ErrorResult("Failed to create license"));
+        }
+    }
+
+    /// <summary>
+    /// Update an existing license
+    /// </summary>
+    [HttpPut("licenses/{id}")]
+    public async Task<ActionResult<ApiResponse<object>>> UpdateLicense(Guid id, [FromBody] UpdateLicenseRequest request)
+    {
+        try
+        {
+            var license = await _context.Licenses.FindAsync(id);
+            if (license == null)
+            {
+                return NotFound(ApiResponse<object>.ErrorResult("License not found"));
+            }
+
+            if (request.Type.HasValue)
+            {
+                license.Type = request.Type.Value;
+            }
+            if (request.Status.HasValue)
+            {
+                license.Status = request.Status.Value;
+            }
+            if (request.IsActive.HasValue)
+            {
+                license.IsActive = request.IsActive.Value;
+            }
+            if (request.ExpiresAt.HasValue)
+            {
+                license.ExpiresAt = request.ExpiresAt.Value;
+            }
+
+            await _context.SaveChangesAsync();
+            return Ok(ApiResponse<object>.SuccessResult(license, "License updated successfully"));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error updating license {LicenseId}", id);
+            return StatusCode(500, ApiResponse<object>.ErrorResult("Failed to update license"));
         }
     }
 }

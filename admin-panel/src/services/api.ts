@@ -122,6 +122,18 @@ class ApiClient {
     return this.post(`/admin/users/${id}/unsuspend`);
   }
 
+  async createUser(data: { firstName: string; lastName: string; email: string; password: string }): Promise<ApiResponse<User>> {
+    return this.post('/admin/users', data);
+  }
+
+  async updateUser(id: string, data: Partial<User>): Promise<ApiResponse<User>> {
+    return this.put(`/admin/users/${id}`, data);
+  }
+
+  async deleteUser(id: string): Promise<ApiResponse<void>> {
+    return this.delete(`/admin/users/${id}`);
+  }
+
   // License Management API
   async getLicenses(filters: FilterState): Promise<ApiResponse<PaginatedResponse<License>>> {
     return this.get('/admin/licenses', filters);
@@ -137,6 +149,10 @@ class ApiClient {
 
   async updateLicense(id: string, data: Partial<License>): Promise<ApiResponse<License>> {
     return this.put(`/admin/licenses/${id}`, data);
+  }
+
+  async createLicense(data: { userId: string; type: number; expiresAt?: string }): Promise<ApiResponse<License>> {
+    return this.post('/admin/licenses', data);
   }
 
   async revokeLicense(id: string): Promise<ApiResponse<void>> {
@@ -173,8 +189,34 @@ class ApiClient {
     return this.get(`/admin/analytics/users?period=${period}`);
   }
 
-  async getLicenseDistribution(): Promise<ApiResponse<Record<string, unknown>>> {
+  async getLicenseDistribution(): Promise<ApiResponse<any>> {
     return this.get('/admin/analytics/license-distribution');
+  }
+
+  // Notification API
+  async sendNotification(userIds: string[], message: string, type: string): Promise<ApiResponse<void>> {
+    return this.post('/admin/notifications/send', { userIds, message, type });
+  }
+
+  async broadcastNotification(message: string, type: string): Promise<ApiResponse<void>> {
+    return this.post('/admin/notifications/broadcast', { message, type });
+  }
+
+  async getNotifications(): Promise<ApiResponse<PaginatedResponse<Notification>>> {
+    return this.get('/api/notifications/me');
+  }
+
+  async markNotificationAsRead(id: string): Promise<ApiResponse<void>> {
+    return this.post(`/api/notifications/${id}/read`);
+  }
+
+  // Settings API
+  async getAdminSettings(): Promise<ApiResponse<AdminSettings>> {
+    return this.get('/admin/settings');
+  }
+
+  async updateAdminSettings(settings: AdminSettings): Promise<ApiResponse<AdminSettings>> {
+    return this.put('/admin/settings', settings);
   }
 
   // System Management API
@@ -222,12 +264,13 @@ export const userAPI = {
   deleteUser: (id: string) => apiClient.deleteUser(id),
   suspendUser: (id: string) => apiClient.suspendUser(id),
   unsuspendUser: (id: string) => apiClient.unsuspendUser(id),
+  createUser: (data: { firstName: string; lastName: string; email: string; password: string }) => apiClient.createUser(data),
 };
 
 export const licenseAPI = {
   getLicenses: (filters: FilterState) => apiClient.getLicenses(filters),
   getLicense: (id: string) => apiClient.getLicense(id),
-  createLicense: (data: Partial<License>) => apiClient.createLicense(data),
+  createLicense: (data: { userId: string; type: number; expiresAt?: string }) => apiClient.createLicense(data),
   updateLicense: (id: string, data: Partial<License>) => apiClient.updateLicense(id, data),
   revokeLicense: (id: string) => apiClient.revokeLicense(id),
   extendLicense: (id: string, days: number) => apiClient.extendLicense(id, days),
@@ -244,4 +287,16 @@ export const analyticsAPI = {
   getRevenueAnalytics: (period: 'week' | 'month' | 'year') => apiClient.getRevenueAnalytics(period),
   getUserGrowthAnalytics: (period: 'week' | 'month' | 'year') => apiClient.getUserGrowthAnalytics(period),
   getLicenseDistribution: () => apiClient.getLicenseDistribution(),
+};
+
+export const notificationAPI = {
+  sendNotification: (userIds: string[], message: string, type: string) => apiClient.sendNotification(userIds, message, type),
+  broadcastNotification: (message: string, type: string) => apiClient.broadcastNotification(message, type),
+  getNotifications: () => apiClient.getNotifications(),
+  markNotificationAsRead: (id: string) => apiClient.markNotificationAsRead(id),
+};
+
+export const settingsAPI = {
+  getAdminSettings: () => apiClient.getAdminSettings(),
+  updateAdminSettings: (settings: AdminSettings) => apiClient.updateAdminSettings(settings),
 };

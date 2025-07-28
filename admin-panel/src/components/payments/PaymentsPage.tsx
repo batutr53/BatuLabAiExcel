@@ -45,6 +45,12 @@ export function PaymentsPage() {
   });
   
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
+  const [confirmModal, setConfirmModal] = useState<{
+    isOpen: boolean;
+    paymentId?: string;
+    paymentAmount?: number;
+    paymentCurrency?: string;
+  }>({ isOpen: false });
   
   const queryClient = useQueryClient();
 
@@ -59,7 +65,11 @@ export function PaymentsPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['payments'] });
       setActiveDropdown(null);
+      toast.success('Ödeme başarıyla iade edildi!');
     },
+    onError: (error) => {
+      toast.error('Ödeme iade edilirken hata oluştu: ' + (error.message || 'Bilinmeyen hata'));
+    }
   });
 
   const payments = data?.data?.data || [];
@@ -78,10 +88,20 @@ export function PaymentsPage() {
     setFilters(prev => ({ ...prev, page }));
   };
 
-  const handleRefund = async (paymentId: string) => {
-    const reason = prompt('İade nedeni (opsiyonel):');
-    if (confirm('Bu ödemeyi iade etmek istediğinizden emin misiniz?')) {
-      await refundMutation.mutateAsync({ id: paymentId, reason: reason || undefined });
+  const handleRefund = (payment: Payment) => {
+    setConfirmModal({
+      isOpen: true,
+      paymentId: payment.id,
+      paymentAmount: payment.amount,
+      paymentCurrency: payment.currency,
+    });
+    setActiveDropdown(null);
+  };
+
+  const onConfirmModalConfirm = async (reason?: string) => {
+    if (confirmModal.paymentId) {
+      await refundMutation.mutateAsync({ id: confirmModal.paymentId, reason });
+      setConfirmModal({ isOpen: false });
     }
   };
 
@@ -389,7 +409,7 @@ export function PaymentsPage() {
                                 
                                 {payment.status === 2 && ( // Succeeded payments can be refunded
                                   <button
-                                    onClick={() => handleRefund(payment.id)}
+                                    onClick={() => handleRefund(payment)}
                                     disabled={refundMutation.isPending}
                                     className="flex items-center px-4 py-2 text-sm text-orange-700 hover:bg-orange-50 w-full text-left disabled:opacity-50"
                                   >
@@ -483,6 +503,17 @@ export function PaymentsPage() {
           </div>
         )}
       </div>
+      {/* Modals */}
+      <ConfirmModal
+        isOpen={confirmModal.isOpen}
+        onClose={() => setConfirmModal({ isOpen: false })}
+        onConfirm={() => onConfirmModalConfirm()}
+        title="Ödemeyi İade Et"
+        message={`Bu ödemeyi (${formatAmount(confirmModal.paymentAmount || 0, confirmModal.paymentCurrency || 'USD')}) iade etmek istediğinizden emin misiniz? Bu işlem geri alınamaz.`}
+        confirmText="İade Et"
+        type="warning"
+        isLoading={refundMutation.isPending}
+      />
     </div>
   );
 }

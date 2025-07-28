@@ -242,6 +242,8 @@ try
     builder.Services.AddScoped<IEmailService, EmailService>();
     builder.Services.AddScoped<IApiAuthenticationService, ApiAuthenticationService>();
     builder.Services.AddScoped<IUserManagementService, UserManagementService>();
+    builder.Services.AddScoped<IAdminSettingsService, AdminSettingsService>();
+    builder.Services.AddScoped<INotificationService, NotificationService>();
 
     // JWT Authentication
     var jwtSettings = builder.Configuration.GetSection("Authentication");

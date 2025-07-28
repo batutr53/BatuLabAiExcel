@@ -14,6 +14,9 @@ import {
 import { userAPI } from '../../services/api';
 import type { FilterState } from '../../types';
 import { clsx } from 'clsx';
+import { ConfirmModal } from '../licenses/ConfirmModal'; // Reusing ConfirmModal
+import { UserEditModal } from './UserEditModal'; // New component for editing
+import toast from 'react-hot-toast';
 
 interface User {
   id: string;
@@ -40,8 +43,14 @@ export function UsersPage() {
     pageSize: 10,
   });
   
-  const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
+  const [editModal, setEditModal] = useState<{ isOpen: boolean; user?: User }>({ isOpen: false });
+  const [confirmModal, setConfirmModal] = useState<{
+    isOpen: boolean;
+    type: 'suspend' | 'unsuspend' | 'delete';
+    userId?: string;
+    userName?: string;
+  }>({ isOpen: false, type: 'suspend' });
   
   const queryClient = useQueryClient();
 
@@ -55,7 +64,11 @@ export function UsersPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['users'] });
       setActiveDropdown(null);
+      toast.success('Kullanıcı başarıyla askıya alındı!');
     },
+    onError: (error) => {
+      toast.error('Kullanıcı askıya alınırken hata oluştu: ' + (error.message || 'Bilinmeyen hata'));
+    }
   });
 
   const unsuspendMutation = useMutation({
@@ -63,7 +76,35 @@ export function UsersPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['users'] });
       setActiveDropdown(null);
+      toast.success('Kullanıcı başarıyla aktifleştirildi!');
     },
+    onError: (error) => {
+      toast.error('Kullanıcı aktifleştirilirken hata oluştu: ' + (error.message || 'Bilinmeyen hata'));
+    }
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: ({ id, data }: { id: string; data: Partial<User> }) => userAPI.updateUser(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['users'] });
+      setEditModal({ isOpen: false });
+      toast.success('Kullanıcı başarıyla güncellendi!');
+    },
+    onError: (error) => {
+      toast.error('Kullanıcı güncellenirken hata oluştu: ' + (error.message || 'Bilinmeyen hata'));
+    }
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (userId: string) => userAPI.deleteUser(userId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['users'] });
+      setActiveDropdown(null);
+      toast.success('Kullanıcı başarıyla silindi!');
+    },
+    onError: (error) => {
+      toast.error('Kullanıcı silinirken hata oluştu: ' + (error.message || 'Bilinmeyen hata'));
+    }
   });
 
   const users = data?.data?.data || [];
@@ -82,12 +123,32 @@ export function UsersPage() {
     setFilters(prev => ({ ...prev, page }));
   };
 
-  const handleUserAction = async (userId: string, action: 'suspend' | 'unsuspend') => {
-    if (action === 'suspend') {
-      await suspendMutation.mutateAsync(userId);
-    } else {
-      await unsuspendMutation.mutateAsync(userId);
+  const handleUserAction = (user: User, action: 'suspend' | 'unsuspend' | 'delete') => {
+    setConfirmModal({
+      isOpen: true,
+      type: action,
+      userId: user.id,
+      userName: user.fullName,
+    });
+    setActiveDropdown(null);
+  };
+
+  const handleEditUser = (user: User) => {
+    setEditModal({ isOpen: true, user });
+    setActiveDropdown(null);
+  };
+
+  const onConfirmModalConfirm = async () => {
+    if (!confirmModal.userId) return;
+
+    if (confirmModal.type === 'suspend') {
+      await suspendMutation.mutateAsync(confirmModal.userId);
+    } else if (confirmModal.type === 'unsuspend') {
+      await unsuspendMutation.mutateAsync(confirmModal.userId);
+    } else if (confirmModal.type === 'delete') {
+      await deleteMutation.mutateAsync(confirmModal.userId);
     }
+    setConfirmModal({ isOpen: false, type: 'suspend' });
   };
 
   const formatDate = (dateString: string) => {
@@ -284,14 +345,17 @@ export function UsersPage() {
                         {activeDropdown === user.id && (
                           <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-10 border border-gray-200">
                             <div className="py-1">
-                              <button className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left">
+                              <button
+                                onClick={() => handleEditUser(user)}
+                                className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
+                              >
                                 <PencilIcon className="w-4 h-4 mr-2" />
                                 Düzenle
                               </button>
                               
                               {user.isActive ? (
                                 <button
-                                  onClick={() => handleUserAction(user.id, 'suspend')}
+                                  onClick={() => handleUserAction(user, 'suspend')}
                                   disabled={suspendMutation.isPending}
                                   className="flex items-center px-4 py-2 text-sm text-yellow-700 hover:bg-yellow-50 w-full text-left disabled:opacity-50"
                                 >
@@ -300,7 +364,7 @@ export function UsersPage() {
                                 </button>
                               ) : (
                                 <button
-                                  onClick={() => handleUserAction(user.id, 'unsuspend')}
+                                  onClick={() => handleUserAction(user, 'unsuspend')}
                                   disabled={unsuspendMutation.isPending}
                                   className="flex items-center px-4 py-2 text-sm text-green-700 hover:bg-green-50 w-full text-left disabled:opacity-50"
                                 >
@@ -309,9 +373,13 @@ export function UsersPage() {
                                 </button>
                               )}
                               
-                              <button className="flex items-center px-4 py-2 text-sm text-red-700 hover:bg-red-50 w-full text-left">
+                              <button
+                                onClick={() => handleUserAction(user, 'delete')}
+                                disabled={deleteMutation.isPending}
+                                className="flex items-center px-4 py-2 text-sm text-red-700 hover:bg-red-50 w-full text-left disabled:opacity-50"
+                              >
                                 <TrashIcon className="w-4 h-4 mr-2" />
-                                Sil
+                                {deleteMutation.isPending ? 'Siliniyor...' : 'Sil'}
                               </button>
                             </div>
                           </div>
@@ -398,6 +466,35 @@ export function UsersPage() {
           </div>
         )}
       </div>
+      
+      {/* Modals */}
+      <UserEditModal
+        isOpen={editModal.isOpen}
+        onClose={() => setEditModal({ isOpen: false })}
+        user={editModal.user}
+        onSave={async (updatedUser) => {
+          if (editModal.user) {
+            await updateMutation.mutateAsync({ id: editModal.user.id, data: updatedUser });
+          }
+        }}
+        isLoading={updateMutation.isPending}
+      />
+
+      <ConfirmModal
+        isOpen={confirmModal.isOpen}
+        onClose={() => setConfirmModal({ isOpen: false, type: 'suspend' })}
+        onConfirm={onConfirmModalConfirm}
+        title={confirmModal.type === 'delete' ? 'Kullanıcıyı Sil' : confirmModal.type === 'suspend' ? 'Kullanıcıyı Askıya Al' : 'Kullanıcıyı Aktifleştir'}
+        message={confirmModal.type === 'delete'
+          ? `Are you sure you want to delete user ${confirmModal.userName}? This action cannot be undone.`
+          : confirmModal.type === 'suspend'
+            ? `Are you sure you want to suspend user ${confirmModal.userName}? They will not be able to log in.`
+            : `Are you sure you want to activate user ${confirmModal.userName}? They will be able to log in.`
+        }
+        confirmText={confirmModal.type === 'delete' ? 'Sil' : confirmModal.type === 'suspend' ? 'Askıya Al' : 'Aktifleştir'}
+        type={confirmModal.type === 'delete' ? 'danger' : confirmModal.type === 'suspend' ? 'warning' : 'info'}
+        isLoading={suspendMutation.isPending || unsuspendMutation.isPending || deleteMutation.isPending}
+      />
     </div>
   );
 }

@@ -57,6 +57,9 @@ export function LicensesPage() {
     licenseId?: string;
     licenseName?: string;
   }>({ isOpen: false, type: 'revoke' });
+  const [editModal, setEditModal] = useState<{ isOpen: boolean; license?: License }>({ isOpen: false });
+  const [editModal, setEditModal] = useState<{ isOpen: boolean; license?: License }>({ isOpen: false });
+  const [editModal, setEditModal] = useState<{ isOpen: boolean; license?: License }>({ isOpen: false });
   
   const queryClient = useQueryClient();
 
@@ -436,6 +439,13 @@ export function LicensesPage() {
                           {activeDropdown === license.id && (
                             <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-10 border border-gray-200">
                               <div className="py-1">
+                                <button
+                                  onClick={() => setEditModal({ isOpen: true, license })}
+                                  className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
+                                >
+                                  <PencilIcon className="w-4 h-4 mr-2" />
+                                  Düzenle
+                                </button>
                                 {license.isActive && license.expiresAt && (
                                   <button
                                     onClick={() => handleExtendLicense(license)}

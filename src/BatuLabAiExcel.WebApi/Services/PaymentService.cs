@@ -470,4 +470,6 @@ public class StripeSettings
     public string MonthlyPriceId { get; set; } = string.Empty;
     public string YearlyPriceId { get; set; } = string.Empty;
     public string LifetimePriceId { get; set; } = string.Empty;
+    public string SuccessUrl { get; set; } = string.Empty;
+    public string CancelUrl { get; set; } = string.Empty;
 }
