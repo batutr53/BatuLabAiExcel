@@ -15,10 +15,27 @@ interface SystemStatusProps {
 export function SystemStatus({ status, loading }: SystemStatusProps) {
   if (loading) {
     return (
-      <div className="bg-white rounded-xl p-4 shadow-md border border-gray-200 animate-pulse">
-        <div className="flex items-center space-x-3">
-          <div className="w-5 h-5 bg-gray-200 rounded"></div>
-          <div className="h-4 bg-gray-200 rounded w-32"></div>
+      <div className="bg-white rounded-xl p-6 shadow-md border border-gray-200">
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">Sistem Durumu</h3>
+        <div className="space-y-4 animate-pulse">
+          {[1, 2, 3, 4].map((i) => (
+            <div key={i} className="flex items-center space-x-3">
+              <div className="w-5 h-5 bg-gray-200 rounded"></div>
+              <div className="h-4 bg-gray-200 rounded w-32"></div>
+              <div className="h-3 bg-gray-200 rounded w-16 ml-auto"></div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  if (!status) {
+    return (
+      <div className="bg-white rounded-xl p-6 shadow-md border border-gray-200">
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">Sistem Durumu</h3>
+        <div className="text-center py-8 text-gray-500">
+          <p>Sistem durumu yüklenemedi</p>
         </div>
       </div>
     );
@@ -61,75 +78,61 @@ export function SystemStatus({ status, loading }: SystemStatusProps) {
     }
   };
 
-  const webApiConfig = getStatusConfig(status.webApiStatus);
-  const dbConfig = getStatusConfig(status.databaseStatus);
+  const services = [
+    { name: 'Veritabanı', ...status.database },
+    { name: 'API', ...status.api },
+    { name: 'Depolama', ...status.storage },
+    { name: 'Bellek', ...status.memory },
+  ];
 
-  const formatUptime = (seconds: number) => {
-    const days = Math.floor(seconds / (24 * 3600));
-    const hours = Math.floor((seconds % (24 * 3600)) / 3600);
-    const minutes = Math.floor((seconds % 3600) / 60);
-    
-    if (days > 0) return `${days}g ${hours}s`;
-    if (hours > 0) return `${hours}s ${minutes}d`;
-    return `${minutes}d`;
-  };
-
-  const overallHealthy = status.webApiStatus === 'healthy' && status.databaseStatus === 'healthy';
+  const allHealthy = services.every(service => service.status === 'healthy');
 
   return (
-    <div className={clsx(
-      'rounded-xl p-4 shadow-md border transition-all',
-      overallHealthy 
-        ? 'bg-green-50 border-green-200' 
-        : 'bg-yellow-50 border-yellow-200'
-    )}>
-      <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-4">
-          {/* Overall Status */}
-          <div className="flex items-center space-x-2">
-            {overallHealthy ? (
-              <CheckCircleIcon className="w-5 h-5 text-green-600" />
-            ) : (
-              <ExclamationTriangleIcon className="w-5 h-5 text-yellow-600" />
-            )}
-            <span className="font-medium text-gray-900">
-              {overallHealthy ? 'Sistem Normal' : 'Sistem Uyarısı'}
-            </span>
-          </div>
-
-          {/* Individual Status */}
-          <div className="flex items-center space-x-6 text-sm">
-            <div className="flex items-center space-x-1">
-              <webApiConfig.icon className={clsx('w-4 h-4', webApiConfig.color)} />
-              <span className="text-gray-700">WebAPI: {webApiConfig.text}</span>
-            </div>
-            <div className="flex items-center space-x-1">
-              <dbConfig.icon className={clsx('w-4 h-4', dbConfig.color)} />
-              <span className="text-gray-700">Veritabanı: {dbConfig.text}</span>
-            </div>
-          </div>
-        </div>
-
-        {/* System Info */}
-        <div className="flex items-center space-x-4 text-sm text-gray-600">
-          <div className="flex items-center space-x-1">
-            <ClockIcon className="w-4 h-4" />
-            <span>Çalışma süresi: {formatUptime(status.uptime)}</span>
-          </div>
-          <div className="bg-gray-100 px-2 py-1 rounded text-xs font-mono">
-            v{status.version}
-          </div>
+    <div className="bg-white rounded-xl p-6 shadow-md border border-gray-200">
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="text-lg font-semibold text-gray-900">Sistem Durumu</h3>
+        <div className={clsx(
+          'px-3 py-1 rounded-full text-sm font-medium',
+          allHealthy
+            ? 'bg-green-100 text-green-800'
+            : 'bg-yellow-100 text-yellow-800'
+        )}>
+          {allHealthy ? 'Tüm Sistemler Çalışıyor' : 'Dikkat Gerekiyor'}
         </div>
       </div>
 
-      {/* Warning Message */}
-      {!overallHealthy && (
-        <div className="mt-3 text-sm text-yellow-800">
-          <p>
-            Sistem performansında düşüş tespit edildi. Lütfen sistem yöneticisine başvurun.
-          </p>
-        </div>
-      )}
+      <div className="space-y-3">
+        {services.map((service) => {
+          const config = getStatusConfig(service.status);
+          const Icon = config.icon;
+
+          return (
+            <div key={service.name} className="flex items-center justify-between p-3 rounded-lg border border-gray-100">
+              <div className="flex items-center space-x-3">
+                <Icon className={clsx('w-5 h-5', config.color)} />
+                <span className="font-medium text-gray-900">{service.name}</span>
+              </div>
+              <div className="flex items-center space-x-3">
+                {service.responseTime && (
+                  <span className="text-sm text-gray-500">{service.responseTime}</span>
+                )}
+                {service.usage && (
+                  <span className="text-sm text-gray-500">{service.usage}</span>
+                )}
+                <span className={clsx('text-sm font-medium', config.color)}>
+                  {config.text}
+                </span>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      <div className="mt-4 pt-4 border-t border-gray-200">
+        <p className="text-xs text-gray-500">
+          Son güncelleme: {new Date(status.lastUpdated).toLocaleString('tr-TR')}
+        </p>
+      </div>
     </div>
   );
 }

@@ -1,14 +1,14 @@
-// API Response Types
+// API Response Types (Backend format)
 export interface ApiResponse<T> {
   success: boolean;
   data: T;
-  message?: string;
-  error?: string;
+  message: string;
+  errors: string[];
 }
 
 export interface PaginatedResponse<T> {
   data: T[];
-  total: number;
+  totalCount: number;
   page: number;
   pageSize: number;
   totalPages: number;

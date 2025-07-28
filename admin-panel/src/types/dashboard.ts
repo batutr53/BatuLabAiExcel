@@ -1,25 +1,36 @@
 import type { User } from './user';
 import type { Payment } from './payment';
 
-// Dashboard Stats
+// Dashboard Stats (Backend format)
 export interface DashboardStats {
   totalUsers: number;
   activeUsers: number;
   totalRevenue: number;
-  monthlyRevenue: number;
+  totalLicenses: number;
   activeLicenses: number;
-  trialUsers: number;
-  recentSignups: User[];
-  recentPayments: Payment[];
+  revenueGrowth: number;
+  userGrowth: number;
 }
 
-// System Status
+// System Status (Backend format)
 export interface SystemStatus {
-  webApiStatus: 'healthy' | 'degraded' | 'down';
-  databaseStatus: 'healthy' | 'degraded' | 'down';
-  lastChecked: string;
-  uptime: number;
-  version: string;
+  database: {
+    status: string;
+    responseTime: string;
+  };
+  api: {
+    status: string;
+    responseTime: string;
+  };
+  storage: {
+    status: string;
+    usage: string;
+  };
+  memory: {
+    status: string;
+    usage: string;
+  };
+  lastUpdated: string;
 }
 
 // Chart Data Types

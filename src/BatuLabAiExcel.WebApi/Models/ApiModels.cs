@@ -179,3 +179,13 @@ public class ApiResponse : ApiResponse<object>
         };
     }
 }
+
+/// <summary>
+/// License extension request model
+/// </summary>
+public class ExtendLicenseRequest
+{
+    [Required]
+    [Range(1, 365, ErrorMessage = "Days must be between 1 and 365")]
+    public int Days { get; set; }
+}

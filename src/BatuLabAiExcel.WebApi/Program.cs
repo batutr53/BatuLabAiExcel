@@ -70,6 +70,99 @@ static async Task SeedAdminUserAsync(IServiceProvider serviceProvider)
     }
 }
 
+// Method to seed test data
+static async Task SeedTestDataAsync(IServiceProvider serviceProvider)
+{
+    var context = serviceProvider.GetRequiredService<AppDbContext>();
+    var logger = serviceProvider.GetRequiredService<ILogger<Program>>();
+
+    // Check if test data already exists
+    var existingUsersCount = await context.Users.CountAsync();
+    if (existingUsersCount > 1) // More than just admin user
+    {
+        logger.LogInformation("Test data already exists, skipping seed");
+        return;
+    }
+
+    // Create test users
+    var testUsers = new List<User>();
+    for (int i = 1; i <= 5; i++)
+    {
+        var user = new User
+        {
+            Id = Guid.NewGuid(),
+            Email = $"test{i}@example.com",
+            FirstName = $"Test{i}",
+            LastName = "User",
+            PasswordHash = BCrypt.Net.BCrypt.HashPassword("password123"),
+            IsEmailVerified = true,
+            IsActive = i <= 3, // First 3 users are active
+            CreatedAt = DateTime.UtcNow.AddDays(-Random.Shared.Next(1, 30))
+        };
+        testUsers.Add(user);
+    }
+
+    context.Users.AddRange(testUsers);
+    await context.SaveChangesAsync();
+
+    // Create test licenses
+    var testLicenses = new List<License>();
+    foreach (var user in testUsers)
+    {
+        var licenseType = (LicenseType)Random.Shared.Next(0, 4);
+        var license = new License
+        {
+            Id = Guid.NewGuid(),
+            UserId = user.Id,
+            Type = licenseType,
+            Status = user.IsActive ? LicenseStatus.Active : LicenseStatus.Expired,
+            LicenseKey = $"TEST-{Guid.NewGuid().ToString("N")[..16].ToUpper()}",
+            IsActive = user.IsActive,
+            StartDate = DateTime.UtcNow.AddDays(-Random.Shared.Next(1, 90)),
+            ExpiresAt = licenseType == LicenseType.Lifetime ? null : DateTime.UtcNow.AddDays(Random.Shared.Next(30, 365)),
+            CreatedAt = user.CreatedAt,
+            Currency = "USD",
+            PaidAmount = licenseType switch
+            {
+                LicenseType.Monthly => 29.99m,
+                LicenseType.Yearly => 299.99m,
+                LicenseType.Lifetime => 999.99m,
+                _ => 0m
+            }
+        };
+        testLicenses.Add(license);
+    }
+
+    context.Licenses.AddRange(testLicenses);
+    await context.SaveChangesAsync();
+
+    // Create test payments
+    var testPayments = new List<Payment>();
+    foreach (var license in testLicenses.Where(l => l.Type != LicenseType.Trial))
+    {
+        var payment = new Payment
+        {
+            Id = Guid.NewGuid(),
+            UserId = license.UserId,
+            LicenseId = license.Id,
+            StripePaymentIntentId = $"pi_test_{Guid.NewGuid().ToString("N")[..16]}",
+            Amount = license.PaidAmount,
+            Currency = "USD",
+            Status = PaymentStatus.Succeeded,
+            LicenseType = license.Type,
+            Description = $"{license.Type} License Purchase",
+            CreatedAt = license.CreatedAt.AddMinutes(Random.Shared.Next(1, 60))
+        };
+        testPayments.Add(payment);
+    }
+
+    context.Payments.AddRange(testPayments);
+    await context.SaveChangesAsync();
+
+    logger.LogInformation("Test data seeded successfully: {UserCount} users, {LicenseCount} licenses, {PaymentCount} payments", 
+        testUsers.Count, testLicenses.Count, testPayments.Count);
+}
+
 try
 {
     var builder = WebApplication.CreateBuilder(args);
@@ -269,8 +362,9 @@ try
         await context.Database.MigrateAsync();
         Log.Information("Database migration completed");
         
-        // Seed admin user
+        // Seed admin user and test data
         await SeedAdminUserAsync(scope.ServiceProvider);
+        await SeedTestDataAsync(scope.ServiceProvider);
     }
 
     Log.Information("Starting Office AI - Batu Lab Web API");

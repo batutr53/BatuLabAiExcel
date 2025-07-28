@@ -143,8 +143,12 @@ class ApiClient {
     return this.post(`/admin/licenses/${id}/revoke`);
   }
 
-  async extendLicense(id: string, days: number): Promise<ApiResponse<License>> {
-    return this.post(`/admin/licenses/${id}/extend`, { days });
+  async extendLicense(id: string, days: number): Promise<ApiResponse<object>> {
+    return this.post(`/admin/licenses/${id}/extend`, { Days: days });
+  }
+
+  async deleteLicense(id: string): Promise<ApiResponse<object>> {
+    return this.delete(`/admin/licenses/${id}`);
   }
 
   // Payment Management API
@@ -227,6 +231,7 @@ export const licenseAPI = {
   updateLicense: (id: string, data: Partial<License>) => apiClient.updateLicense(id, data),
   revokeLicense: (id: string) => apiClient.revokeLicense(id),
   extendLicense: (id: string, days: number) => apiClient.extendLicense(id, days),
+  deleteLicense: (id: string) => apiClient.deleteLicense(id),
 };
 
 export const paymentAPI = {

@@ -8,6 +8,10 @@ import { AuthProvider } from './contexts/AuthContext';
 import { LoginPage } from './components/auth/LoginPage';
 import { DashboardLayout } from './components/layout/DashboardLayout';
 import { DashboardPage } from './components/dashboard/DashboardPage';
+import { UsersPage } from './components/users/UsersPage';
+import { LicensesPage } from './components/licenses/LicensesPage';
+import { PaymentsPage } from './components/payments/PaymentsPage';
+import { SettingsPage } from './components/settings/SettingsPage';
 
 // Create a client
 const queryClient = new QueryClient({
@@ -36,15 +40,15 @@ function App() {
                 <Route path="dashboard" element={<DashboardPage />} />
                 
                 {/* User Management */}
-                <Route path="users" element={<div className="p-6"><h1 className="text-2xl font-bold">Kullanıcı Yönetimi</h1><p className="text-gray-600 mt-2">Bu sayfa geliştirilme aşamasında...</p></div>} />
+                <Route path="users" element={<UsersPage />} />
                 <Route path="users/new" element={<div className="p-6"><h1 className="text-2xl font-bold">Yeni Kullanıcı</h1><p className="text-gray-600 mt-2">Bu sayfa geliştirilme aşamasında...</p></div>} />
                 
                 {/* License Management */}
-                <Route path="licenses" element={<div className="p-6"><h1 className="text-2xl font-bold">Lisans Yönetimi</h1><p className="text-gray-600 mt-2">Bu sayfa geliştirilme aşamasında...</p></div>} />
+                <Route path="licenses" element={<LicensesPage />} />
                 <Route path="licenses/new" element={<div className="p-6"><h1 className="text-2xl font-bold">Yeni Lisans</h1><p className="text-gray-600 mt-2">Bu sayfa geliştirilme aşamasında...</p></div>} />
                 
                 {/* Payment Management */}
-                <Route path="payments" element={<div className="p-6"><h1 className="text-2xl font-bold">Ödeme Yönetimi</h1><p className="text-gray-600 mt-2">Bu sayfa geliştirilme aşamasında...</p></div>} />
+                <Route path="payments" element={<PaymentsPage />} />
                 
                 {/* Analytics */}
                 <Route path="analytics" element={<div className="p-6"><h1 className="text-2xl font-bold">Analitik</h1><p className="text-gray-600 mt-2">Bu sayfa geliştirilme aşamasında...</p></div>} />
@@ -54,7 +58,7 @@ function App() {
                 <Route path="notifications/send" element={<div className="p-6"><h1 className="text-2xl font-bold">Bildirim Gönder</h1><p className="text-gray-600 mt-2">Bu sayfa geliştirilme aşamasında...</p></div>} />
                 
                 {/* Settings */}
-                <Route path="settings" element={<div className="p-6"><h1 className="text-2xl font-bold">Ayarlar</h1><p className="text-gray-600 mt-2">Bu sayfa geliştirilme aşamasında...</p></div>} />
+                <Route path="settings" element={<SettingsPage />} />
               </Route>
               
               {/* Catch all */}

@@ -85,11 +85,11 @@ export function DashboardPage() {
     {
       title: 'Toplam Kullanıcı',
       value: stats?.totalUsers || 0,
-      change: '+12%',
+      change: `+${stats?.userGrowth || 0}%`,
       trend: 'up' as const,
       icon: UserGroupIcon,
       color: 'blue',
-      description: 'Son 30 günde artış',
+      description: 'Kayıtlı kullanıcı sayısı',
     },
     {
       title: 'Aktif Lisans',
@@ -101,13 +101,13 @@ export function DashboardPage() {
       description: 'Aktif kullanımda',
     },
     {
-      title: 'Aylık Gelir',
-      value: `₺${(stats?.monthlyRevenue || 0).toLocaleString()}`,
-      change: '+23%',
+      title: 'Toplam Gelir',
+      value: `$${(stats?.totalRevenue || 0).toLocaleString()}`,
+      change: `+${stats?.revenueGrowth || 0}%`,
       trend: 'up' as const,
       icon: CurrencyDollarIcon,
       color: 'yellow',
-      description: 'Bu ay toplam',
+      description: 'Toplam gelir',
     },
     {
       title: 'Aktif Kullanıcı',
@@ -116,7 +116,7 @@ export function DashboardPage() {
       trend: 'up' as const,
       icon: ArrowTrendingUpIcon,
       color: 'purple',
-      description: 'Son 24 saatte',
+      description: 'Aktif kullanıcılar',
     },
   ];
 

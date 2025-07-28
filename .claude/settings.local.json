@@ -72,7 +72,8 @@
       "Bash(node:*)",
       "Bash(npm run lint)",
       "Bash(npm uninstall:*)",
-      "Bash(tasklist:*)"
+      "Bash(tasklist:*)",
+      "Bash(cmd //c:*)"
     ],
     "deny": []
   }
