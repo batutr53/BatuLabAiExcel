@@ -238,6 +238,8 @@ export const authAPI = {
 export const dashboardAPI = {
   getStats: () => apiClient.getDashboardStats(),
   getSystemStatus: () => apiClient.getSystemStatus(),
+  getSystemMetrics: () => apiClient.get('/admin/system/metrics'),
+  getApiMetrics: () => apiClient.get('/admin/api/metrics'),
 };
 
 export const userAPI = {

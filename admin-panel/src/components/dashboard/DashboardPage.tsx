@@ -112,7 +112,7 @@ export function DashboardPage() {
     {
       title: 'Aktif Lisans',
       value: stats?.activeLicenses || 0,
-      change: '+8%',
+      change: `+${stats?.licenseGrowth || 0}%`,
       trend: 'up' as const,
       icon: DocumentTextIcon,
       color: 'green',
@@ -130,7 +130,7 @@ export function DashboardPage() {
     {
       title: 'Aktif Kullanıcı',
       value: stats?.activeUsers || 0,
-      change: '+15%',
+      change: `+${stats?.activeUserGrowth || 0}%`,
       trend: 'up' as const,
       icon: ArrowTrendingUpIcon,
       color: 'purple',
@@ -179,7 +179,7 @@ export function DashboardPage() {
               <BoltIcon className="w-6 h-6 text-white" />
             </div>
             <div className="text-right">
-              <div className="text-2xl font-bold">99.9%</div>
+              <div className="text-2xl font-bold">{((systemStatus?.uptime || 0) / 86400 * 100).toFixed(1)}%</div>
               <div className="text-primary-100 text-sm">Uptime</div>
             </div>
           </div>
@@ -193,7 +193,7 @@ export function DashboardPage() {
               <ShieldCheckIcon className="w-6 h-6 text-white" />
             </div>
             <div className="text-right">
-              <div className="text-2xl font-bold">100%</div>
+              <div className="text-2xl font-bold">{systemStatus?.security?.score || '100'}%</div>
               <div className="text-success-100 text-sm">Güvenlik</div>
             </div>
           </div>
@@ -207,7 +207,7 @@ export function DashboardPage() {
               <ChartBarIcon className="w-6 h-6 text-white" />
             </div>
             <div className="text-right">
-              <div className="text-2xl font-bold">₺45K</div>
+              <div className="text-2xl font-bold">₺{(stats?.weeklyRevenue || 0).toLocaleString()}</div>
               <div className="text-warning-100 text-sm">Bu hafta</div>
             </div>
           </div>
@@ -257,11 +257,11 @@ export function DashboardPage() {
             <div className="w-16 h-16 bg-primary-100 rounded-2xl flex items-center justify-center mx-auto mb-3">
               <TrendingUpIcon className="w-8 h-8 text-primary-600" />
             </div>
-            <div className="text-2xl font-bold text-gray-900 mb-1">2.4s</div>
+            <div className="text-2xl font-bold text-gray-900 mb-1">{(systemStatus?.averageResponseTime || 2400)}ms</div>
             <div className="text-sm text-gray-600">Ortalama Yanıt Süresi</div>
             <div className="text-xs text-success-600 mt-1 flex items-center justify-center">
               <TrendingDownIcon className="w-3 h-3 mr-1" />
-              %15 iyileşme
+              %{systemStatus?.responseTimeImprovement || 15} iyileşme
             </div>
           </div>
 
@@ -269,11 +269,11 @@ export function DashboardPage() {
             <div className="w-16 h-16 bg-success-100 rounded-2xl flex items-center justify-center mx-auto mb-3">
               <CheckCircleIcon className="w-8 h-8 text-success-600" />
             </div>
-            <div className="text-2xl font-bold text-gray-900 mb-1">99.8%</div>
+            <div className="text-2xl font-bold text-gray-900 mb-1">{((100 - (systemStatus?.api?.errorRate || 0.2)) || 99.8).toFixed(1)}%</div>
             <div className="text-sm text-gray-600">API Başarı Oranı</div>
             <div className="text-xs text-success-600 mt-1 flex items-center justify-center">
               <TrendingUpIcon className="w-3 h-3 mr-1" />
-              %2 artış
+              %{systemStatus?.api?.successRateImprovement || 2} artış
             </div>
           </div>
 
@@ -281,11 +281,11 @@ export function DashboardPage() {
             <div className="w-16 h-16 bg-warning-100 rounded-2xl flex items-center justify-center mx-auto mb-3">
               <ClockIcon className="w-8 h-8 text-warning-600" />
             </div>
-            <div className="text-2xl font-bold text-gray-900 mb-1">1.2M</div>
+            <div className="text-2xl font-bold text-gray-900 mb-1">{((stats?.monthlyRequests || 1200000) / 1000000).toFixed(1)}M</div>
             <div className="text-sm text-gray-600">Aylık İstekler</div>
             <div className="text-xs text-success-600 mt-1 flex items-center justify-center">
               <TrendingUpIcon className="w-3 h-3 mr-1" />
-              %8 artış
+              %{stats?.requestGrowth || 8} artış
             </div>
           </div>
         </div>

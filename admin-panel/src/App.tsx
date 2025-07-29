@@ -17,6 +17,8 @@ import { AnalyticsPage } from './components/analytics/AnalyticsPage';
 import { NotificationsPage } from './components/notifications/NotificationsPage';
 import { SendNotificationPage } from './components/notifications/SendNotificationPage';
 import { SettingsPage } from './components/settings/SettingsPage';
+import { SystemPage } from './components/system/SystemPage';
+import { ApiPage } from './components/api/ApiPage';
 
 // Create a client
 const queryClient = new QueryClient({
@@ -64,6 +66,12 @@ function App() {
                 
                 {/* Settings */}
                 <Route path="settings" element={<SettingsPage />} />
+                
+                {/* System */}
+                <Route path="system" element={<SystemPage />} />
+                
+                {/* API */}
+                <Route path="api" element={<ApiPage />} />
               </Route>
               
               {/* Catch all */}

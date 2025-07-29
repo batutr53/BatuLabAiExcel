@@ -15,14 +15,14 @@ interface SystemStatusProps {
 export function SystemStatus({ status, loading }: SystemStatusProps) {
   if (loading) {
     return (
-      <div className="bg-white rounded-xl p-6 shadow-md border border-gray-200">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Sistem Durumu</h3>
+      <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-md border border-gray-200 dark:border-gray-700">
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Sistem Durumu</h3>
         <div className="space-y-4 animate-pulse">
           {[1, 2, 3, 4].map((i) => (
             <div key={i} className="flex items-center space-x-3">
-              <div className="w-5 h-5 bg-gray-200 rounded"></div>
-              <div className="h-4 bg-gray-200 rounded w-32"></div>
-              <div className="h-3 bg-gray-200 rounded w-16 ml-auto"></div>
+              <div className="w-5 h-5 bg-gray-200 dark:bg-gray-700 rounded"></div>
+              <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-32"></div>
+              <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-16 ml-auto"></div>
             </div>
           ))}
         </div>
@@ -32,9 +32,9 @@ export function SystemStatus({ status, loading }: SystemStatusProps) {
 
   if (!status) {
     return (
-      <div className="bg-white rounded-xl p-6 shadow-md border border-gray-200">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Sistem Durumu</h3>
-        <div className="text-center py-8 text-gray-500">
+      <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-md border border-gray-200 dark:border-gray-700">
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Sistem Durumu</h3>
+        <div className="text-center py-8 text-gray-500 dark:text-gray-400">
           <p>Sistem durumu yüklenemedi</p>
         </div>
       </div>
@@ -88,14 +88,14 @@ export function SystemStatus({ status, loading }: SystemStatusProps) {
   const allHealthy = services.every(service => service.status === 'healthy');
 
   return (
-    <div className="bg-white rounded-xl p-6 shadow-md border border-gray-200">
+    <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-md border border-gray-200 dark:border-gray-700">
       <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-semibold text-gray-900">Sistem Durumu</h3>
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Sistem Durumu</h3>
         <div className={clsx(
           'px-3 py-1 rounded-full text-sm font-medium',
           allHealthy
-            ? 'bg-green-100 text-green-800'
-            : 'bg-yellow-100 text-yellow-800'
+            ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
+            : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400'
         )}>
           {allHealthy ? 'Tüm Sistemler Çalışıyor' : 'Dikkat Gerekiyor'}
         </div>
@@ -107,17 +107,17 @@ export function SystemStatus({ status, loading }: SystemStatusProps) {
           const Icon = config.icon;
 
           return (
-            <div key={service.name} className="flex items-center justify-between p-3 rounded-lg border border-gray-100">
+            <div key={service.name} className="flex items-center justify-between p-3 rounded-lg border border-gray-100 dark:border-gray-700">
               <div className="flex items-center space-x-3">
                 <Icon className={clsx('w-5 h-5', config.color)} />
-                <span className="font-medium text-gray-900">{service.name}</span>
+                <span className="font-medium text-gray-900 dark:text-white">{service.name}</span>
               </div>
               <div className="flex items-center space-x-3">
                 {service.responseTime && (
-                  <span className="text-sm text-gray-500">{service.responseTime}</span>
+                  <span className="text-sm text-gray-500 dark:text-gray-400">{service.responseTime}</span>
                 )}
                 {service.usage && (
-                  <span className="text-sm text-gray-500">{service.usage}</span>
+                  <span className="text-sm text-gray-500 dark:text-gray-400">{service.usage}</span>
                 )}
                 <span className={clsx('text-sm font-medium', config.color)}>
                   {config.text}
@@ -128,8 +128,8 @@ export function SystemStatus({ status, loading }: SystemStatusProps) {
         })}
       </div>
 
-      <div className="mt-4 pt-4 border-t border-gray-200">
-        <p className="text-xs text-gray-500">
+      <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+        <p className="text-xs text-gray-500 dark:text-gray-400">
           Son güncelleme: {new Date(status.lastUpdated).toLocaleString('tr-TR')}
         </p>
       </div>

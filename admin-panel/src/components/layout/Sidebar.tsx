@@ -17,6 +17,7 @@ import {
   GlobeAltIcon,
 } from '@heroicons/react/24/outline';
 import { clsx } from 'clsx';
+import { useTheme } from '../../contexts/ThemeContext';
 
 interface SidebarProps {
   open: boolean;
@@ -90,14 +91,14 @@ function SidebarContent() {
   return (
     <div className="flex flex-col h-full">
       {/* Logo */}
-      <div className="flex items-center h-16 px-6 border-b border-gray-200/50">
+      <div className="flex items-center h-16 px-6 border-b border-gray-200/50 dark:border-gray-700/50">
         <div className="flex items-center space-x-3">
           <div className="w-8 h-8 bg-gradient-to-br from-primary-500 to-primary-600 rounded-xl flex items-center justify-center shadow-lg">
             <SparklesIcon className="w-5 h-5 text-white" />
           </div>
           <div>
-            <h1 className="text-lg font-bold text-gray-900">Office AI</h1>
-            <p className="text-xs text-gray-500">Batu Lab Admin</p>
+            <h1 className="text-lg font-bold text-gray-900 dark:text-gray-100">Office AI</h1>
+            <p className="text-xs text-gray-500 dark:text-gray-400">Batu Lab Admin</p>
           </div>
         </div>
       </div>
@@ -114,7 +115,7 @@ function SidebarContent() {
                   'group flex items-center px-3 py-3 text-sm font-medium rounded-xl transition-all duration-200 relative',
                   isActive
                     ? 'bg-gradient-to-r from-primary-500 to-primary-600 text-white shadow-lg shadow-primary-500/25'
-                    : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
+                    : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-gray-100'
                 )
               }
             >
@@ -123,7 +124,7 @@ function SidebarContent() {
                   <item.icon
                     className={clsx(
                       'flex-shrink-0 w-5 h-5 mr-3 transition-colors',
-                      isActive ? 'text-white' : 'text-gray-400 group-hover:text-gray-500'
+                      isActive ? 'text-white' : 'text-gray-400 dark:text-gray-500 group-hover:text-gray-500 dark:group-hover:text-gray-400'
                     )}
                   />
                   <div className="flex-1 min-w-0">
@@ -253,7 +254,7 @@ export function Sidebar({ open, onClose }: SidebarProps) {
                     </button>
                   </div>
                 </Transition.Child>
-                <div className="flex grow flex-col gap-y-5 overflow-y-auto bg-white border-r border-gray-200 shadow-xl">
+                <div className="flex grow flex-col gap-y-5 overflow-y-auto bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-700 shadow-xl">
                   <SidebarContent />
                 </div>
               </Dialog.Panel>
@@ -264,7 +265,7 @@ export function Sidebar({ open, onClose }: SidebarProps) {
 
       {/* Desktop sidebar */}
       <div className="hidden lg:fixed lg:inset-y-0 lg:z-40 lg:flex lg:w-72 lg:flex-col">
-        <div className="flex grow flex-col overflow-y-auto bg-white border-r border-gray-200 shadow-sm">
+        <div className="flex grow flex-col overflow-y-auto bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-700 shadow-sm">
           <SidebarContent />
         </div>
       </div>

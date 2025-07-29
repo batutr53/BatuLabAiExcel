@@ -56,9 +56,9 @@ export function RecentActivity({ recentSignups, recentPayments }: RecentActivity
   };
 
   return (
-    <div className="bg-white rounded-xl shadow-md border border-gray-200">
+    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md border border-gray-200 dark:border-gray-700">
       {/* Header with Tabs */}
-      <div className="border-b border-gray-200 p-6">
+      <div className="border-b border-gray-200 dark:border-gray-700 p-6">
         <h2 className="text-xl font-semibold text-gray-900 mb-4">Son Aktiviteler</h2>
         <div className="flex space-x-4">
           <button
@@ -93,7 +93,7 @@ export function RecentActivity({ recentSignups, recentPayments }: RecentActivity
         {activeTab === 'signups' && (
           <div className="space-y-2">
             {recentSignups.length === 0 ? (
-              <div className="text-center py-8 text-gray-500">
+              <div className="text-center py-8 text-gray-500 dark:text-gray-400">
                 <UserIcon className="w-14 h-14 mx-auto mb-3 opacity-50" />
                 <p className="text-lg">Henüz yeni kayıt yok</p>
               </div>
@@ -101,7 +101,7 @@ export function RecentActivity({ recentSignups, recentPayments }: RecentActivity
               recentSignups.map((user) => (
                 <div
                   key={user.id}
-                  className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+                  className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
                 >
                   <div className="flex items-center space-x-3 flex-1 min-w-0">
                     <div className="w-8 h-8 bg-primary-100 rounded-full flex items-center justify-center flex-shrink-0">
@@ -151,7 +151,7 @@ export function RecentActivity({ recentSignups, recentPayments }: RecentActivity
                 return (
                   <div
                     key={payment.id}
-                    className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+                    className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
                   >
                     <div className="flex items-center space-x-3 flex-1 min-w-0">
                       <div className={clsx('w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0', statusConfig.bg)}>

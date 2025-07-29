@@ -17,6 +17,7 @@ import {
   CommandLineIcon,
 } from '@heroicons/react/24/outline';
 import { useAuth } from '../../contexts/AuthContext';
+import { useTheme } from '../../contexts/ThemeContext';
 import { apiClient } from '../../services/api';
 import type { Notification } from '../../types';
 import toast from 'react-hot-toast';
@@ -28,9 +29,9 @@ interface HeaderProps {
 
 export function Header({ onMenuClick }: HeaderProps) {
   const { state, logout } = useAuth();
+  const { theme, toggleTheme, isDark } = useTheme();
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
-  const [isDarkMode, setIsDarkMode] = useState(false);
 
   // Fetch notifications from API
   const { data: notificationsResponse, refetch: refetchNotifications } = useQuery({
@@ -84,7 +85,7 @@ export function Header({ onMenuClick }: HeaderProps) {
   const unreadCount = notifications.filter(n => !n.isRead).length;
 
   return (
-    <div className="bg-white border-b border-gray-200 shadow-sm sticky top-0 z-30">
+    <div className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 shadow-sm sticky top-0 z-30">
       <div className="px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           {/* Left side */}
@@ -92,7 +93,7 @@ export function Header({ onMenuClick }: HeaderProps) {
             {/* Mobile menu button */}
             <button
               type="button"
-              className="lg:hidden p-2 rounded-xl text-gray-400 hover:text-gray-500 hover:bg-gray-50 transition-all duration-200"
+              className="lg:hidden p-2 rounded-xl text-gray-400 hover:text-gray-500 hover:bg-gray-50 dark:text-gray-300 dark:hover:text-gray-200 dark:hover:bg-gray-800 transition-all duration-200"
               onClick={onMenuClick}
             >
               <Bars3Icon className="h-6 w-6" />
@@ -109,19 +110,19 @@ export function Header({ onMenuClick }: HeaderProps) {
                   placeholder="Ara..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="block w-full pl-10 pr-3 py-2 border border-gray-200 rounded-xl bg-gray-50 focus:bg-white focus:ring-2 focus:ring-primary-500 focus:border-transparent text-sm transition-all duration-200 placeholder-gray-500"
+                  className="block w-full pl-10 pr-3 py-2 border border-gray-200 dark:border-gray-600 rounded-xl bg-gray-50 dark:bg-gray-800 focus:bg-white dark:focus:bg-gray-700 focus:ring-2 focus:ring-primary-500 focus:border-transparent text-sm text-gray-900 dark:text-gray-100 transition-all duration-200 placeholder-gray-500 dark:placeholder-gray-400"
                 />
                 {searchQuery && (
-                  <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-lg z-50">
+                  <div className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-xl shadow-lg z-50">
                     <div className="p-3">
-                      <div className="text-sm text-gray-500 mb-2">Öneriler</div>
+                      <div className="text-sm text-gray-500 dark:text-gray-400 mb-2">Öneriler</div>
                       {quickActions.map((action) => (
                         <a
                           key={action.name}
                           href={action.href}
-                          className="flex items-center px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg transition-colors"
+                          className="flex items-center px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition-colors"
                         >
-                          <action.icon className="w-4 h-4 mr-3 text-gray-400" />
+                          <action.icon className="w-4 h-4 mr-3 text-gray-400 dark:text-gray-500" />
                           {action.name}
                         </a>
                       ))}
@@ -136,10 +137,11 @@ export function Header({ onMenuClick }: HeaderProps) {
           <div className="flex items-center space-x-2">
             {/* Theme toggle */}
             <button
-              onClick={() => setIsDarkMode(!isDarkMode)}
-              className="p-2 rounded-xl text-gray-400 hover:text-gray-500 hover:bg-gray-50 transition-all duration-200"
+              onClick={toggleTheme}
+              className="p-2 rounded-xl text-gray-400 hover:text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-800 dark:text-gray-300 dark:hover:text-gray-200 transition-all duration-200"
+              title={isDark ? 'Açık tema' : 'Koyu tema'}
             >
-              {isDarkMode ? (
+              {isDark ? (
                 <SunIcon className="h-5 w-5" />
               ) : (
                 <MoonIcon className="h-5 w-5" />
@@ -148,7 +150,7 @@ export function Header({ onMenuClick }: HeaderProps) {
 
             {/* Notifications */}
             <Popover className="relative">
-              <Popover.Button className="p-2 rounded-xl text-gray-400 hover:text-gray-500 hover:bg-gray-50 transition-all duration-200 relative">
+              <Popover.Button className="p-2 rounded-xl text-gray-400 hover:text-gray-500 hover:bg-gray-50 dark:text-gray-300 dark:hover:text-gray-200 dark:hover:bg-gray-800 transition-all duration-200 relative">
                 <BellIcon className="h-5 w-5" />
                 {unreadCount > 0 && (
                   <span className="absolute -top-1 -right-1 h-4 w-4 bg-danger-500 text-white text-xs rounded-full flex items-center justify-center animate-pulse">
@@ -166,10 +168,10 @@ export function Header({ onMenuClick }: HeaderProps) {
                 leaveFrom="opacity-100 translate-y-0"
                 leaveTo="opacity-0 translate-y-1"
               >
-                <Popover.Panel className="absolute right-0 z-50 mt-2 w-80 bg-white rounded-2xl shadow-2xl border border-gray-100">
+                <Popover.Panel className="absolute right-0 z-50 mt-2 w-80 bg-white dark:bg-gray-800 rounded-2xl shadow-2xl border border-gray-100 dark:border-gray-700">
                   <div className="p-4">
                     <div className="flex items-center justify-between mb-4">
-                      <h3 className="text-lg font-semibold text-gray-900">Bildirimler</h3>
+                      <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Bildirimler</h3>
                       {unreadCount > 0 && (
                         <span className="text-sm text-primary-600 font-medium">
                           {unreadCount} yeni
