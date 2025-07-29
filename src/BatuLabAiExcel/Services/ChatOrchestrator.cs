@@ -543,4 +543,382 @@ public class ChatOrchestrator : IChatOrchestrator
 
         return contextBuilder.ToString();
     }
+
+    /// <summary>
+    /// Process a user message with progress reporting and optimized batch processing for large operations
+    /// </summary>
+    public async Task<Result<string>> ProcessMessageWithProgressAsync(
+        string message, 
+        IProgress<string>? progressCallback = null, 
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            progressCallback?.Report("Starting message processing...");
+            
+            var aiService = _aiServiceFactory.GetAiService(_currentProvider);
+            _logger.LogInformation("Starting message processing with {Provider}: {Message}", aiService.ProviderName, message);
+
+            // Ensure MCP client is initialized
+            progressCallback?.Report("Initializing Excel integration...");
+            var initResult = await _mcpClient.EnsureInitializedAsync(cancellationToken).ConfigureAwait(false);
+            if (!initResult.IsSuccess)
+            {
+                progressCallback?.Report($"Excel integration failed: {initResult.Error}");
+                _logger.LogError("MCP client initialization failed: {Error}", initResult.Error);
+                return Result<string>.Failure($"Excel integration not available: {initResult.Error}");
+            }
+
+            // Analyze current Excel content for data protection
+            if (_currentExcelAnalysis == null)
+            {
+                progressCallback?.Report("Analyzing Excel content...");
+                _logger.LogInformation("Analyzing Excel content for data protection");
+                var analysisResult = await _excelProtection.AnalyzeCurrentContentAsync(cancellationToken).ConfigureAwait(false);
+                if (analysisResult.IsSuccess)
+                {
+                    _currentExcelAnalysis = analysisResult.Value;
+                    progressCallback?.Report($"Excel analysis completed. Found {_currentExcelAnalysis?.Sheets.Count ?? 0} sheets");
+                    _logger.LogInformation("Excel analysis completed. Found {SheetCount} sheets", _currentExcelAnalysis?.Sheets.Count ?? 0);
+                }
+                else
+                {
+                    progressCallback?.Report($"Excel analysis warning: {analysisResult.Error}");
+                    _logger.LogWarning("Could not analyze Excel content: {Error}", analysisResult.Error);
+                }
+            }
+
+            // Get available tools from MCP
+            progressCallback?.Report("Loading Excel tools...");
+            var toolsResult = await _mcpClient.GetAvailableToolsAsync(cancellationToken).ConfigureAwait(false);
+            if (!toolsResult.IsSuccess)
+            {
+                progressCallback?.Report($"Warning: Could not load Excel tools: {toolsResult.Error}");
+                _logger.LogWarning("Could not retrieve MCP tools: {Error}", toolsResult.Error);
+            }
+
+            // Add user message to conversation history with Excel context
+            var userMessageContent = new List<AiMessageContent>
+            {
+                new AiMessageContent
+                {
+                    Type = "text",
+                    Text = BuildContextualMessage(message, _currentExcelAnalysis)
+                }
+            };
+
+            _conversationHistory.Add(new AiMessage
+            {
+                Role = "user",
+                Content = userMessageContent
+            });
+
+            // Prepare AI request with tools
+            var aiTools = toolsResult.IsSuccess ? ConvertMcpToolsToAiTools(toolsResult.Value!) : null;
+
+            var maxRounds = 10; // Prevent infinite loops
+            var currentRound = 0;
+
+            while (currentRound < maxRounds)
+            {
+                currentRound++;
+                progressCallback?.Report($"Processing request (round {currentRound}/{maxRounds})...");
+                _logger.LogDebug("Processing round {Round}/{MaxRounds}", currentRound, maxRounds);
+
+                // Send request to AI service
+                var aiResult = await aiService.SendMessageAsync(
+                    _conversationHistory.ToList(), // Make a copy
+                    aiTools,
+                    cancellationToken).ConfigureAwait(false);
+
+                if (!aiResult.IsSuccess)
+                {
+                    progressCallback?.Report($"AI service error: {aiResult.Error}");
+                    _logger.LogError("{Provider} request failed: {Error}", aiService.ProviderName, aiResult.Error);
+                    return Result<string>.Failure($"AI service error: {aiResult.Error}");
+                }
+
+                var response = aiResult.Value!;
+                
+                // Add AI response to conversation history
+                var cleanContent = response.Content.Select(block => new AiMessageContent
+                {
+                    Type = block.Type,
+                    Text = block.Text,
+                    ToolUseId = block.ToolUseId,
+                    ToolName = block.ToolName,
+                    ToolInput = block.ToolInput
+                }).ToList();
+
+                _conversationHistory.Add(new AiMessage
+                {
+                    Role = "assistant",
+                    Content = cleanContent
+                });
+
+                // Check if AI wants to use tools - convert to AiMessageContent
+                var toolUses = response.Content
+                    .Where(block => block.Type == "tool_use")
+                    .Select(block => new AiMessageContent
+                    {
+                        Type = block.Type,
+                        Text = block.Text,
+                        ToolUseId = block.ToolUseId,
+                        ToolName = block.ToolName,
+                        ToolInput = block.ToolInput
+                    })
+                    .ToList();
+
+                if (!toolUses.Any())
+                {
+                    // No tool use, return the text response
+                    var textContent = response.Content
+                        .Where(block => block.Type == "text")
+                        .Select(block => block.Text)
+                        .Where(text => !string.IsNullOrEmpty(text))
+                        .FirstOrDefault();
+
+                    progressCallback?.Report($"Completed processing in {currentRound} rounds");
+                    _logger.LogInformation("Completed processing with {Provider} in {Rounds} rounds", aiService.ProviderName, currentRound);
+                    return Result<string>.Success(textContent ?? "No response from AI.");
+                }
+
+                // Check if we can batch process tool calls for better performance
+                if (toolUses.Count > 1 && CanBatchProcess(toolUses))
+                {
+                    progressCallback?.Report($"Executing {toolUses.Count} Excel operations in parallel...");
+                    var batchResults = await ProcessToolsBatch(toolUses, progressCallback, cancellationToken);
+                    
+                    // Add batch results to conversation history
+                    _conversationHistory.Add(new AiMessage
+                    {
+                        Role = "user",
+                        Content = batchResults
+                    });
+                }
+                else
+                {
+                    // Process tool uses sequentially
+                    var toolResults = new List<AiMessageContent>();
+
+                    foreach (var toolUse in toolUses)
+                    {
+                        // Check for cancellation before each tool call
+                        cancellationToken.ThrowIfCancellationRequested();
+                        
+                        if (string.IsNullOrEmpty(toolUse.ToolUseId) || string.IsNullOrEmpty(toolUse.ToolName))
+                        {
+                            _logger.LogWarning("Invalid tool use: missing ID or name");
+                            continue;
+                        }
+
+                        progressCallback?.Report($"Executing: {toolUse.ToolName}...");
+                        _logger.LogInformation("Executing tool: {ToolName} with ID: {ToolId}", toolUse.ToolName, toolUse.ToolUseId);
+
+                        try
+                        {
+                            // Validate operation for data protection
+                            if (_currentExcelAnalysis != null)
+                            {
+                                var validationResult = _excelProtection.ValidateOperation(
+                                    toolUse.ToolName!,
+                                    toolUse.ToolInput ?? new object(),
+                                    _currentExcelAnalysis);
+
+                                if (!validationResult.IsSuccess)
+                                {
+                                    progressCallback?.Report($"Operation blocked: {validationResult.Error}");
+                                    _logger.LogWarning("Operation validation failed: {Error}", validationResult.Error);
+                                    
+                                    var validationFailedResult = new AiMessageContent
+                                    {
+                                        Type = "tool_result",
+                                        ToolUseId = toolUse.ToolUseId,
+                                        ToolResult = $"Operation blocked for data protection: {validationResult.Error}",
+                                        IsError = true
+                                    };
+                                    
+                                    toolResults.Add(validationFailedResult);
+                                    continue;
+                                }
+                            }
+
+                            // Call MCP tool with progress reporting
+                            var mcpResult = await _mcpClient.CallToolWithProgressAsync(
+                                toolUse.ToolName!,
+                                toolUse.ToolInput,
+                                progressCallback,
+                                cancellationToken).ConfigureAwait(false);
+
+                            var toolResult = new AiMessageContent
+                            {
+                                Type = "tool_result",
+                                ToolUseId = toolUse.ToolUseId,
+                                ToolResult = mcpResult.IsSuccess ? mcpResult.Value! : $"Error: {mcpResult.Error}",
+                                IsError = !mcpResult.IsSuccess
+                            };
+
+                            toolResults.Add(toolResult);
+
+                            if (!mcpResult.IsSuccess)
+                            {
+                                progressCallback?.Report($"Tool execution failed: {mcpResult.Error}");
+                                _logger.LogError("Tool {ToolName} failed: {Error}", toolUse.ToolName, mcpResult.Error);
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            progressCallback?.Report($"Tool execution error: {ex.Message}");
+                            _logger.LogError(ex, "Error executing tool {ToolName}", toolUse.ToolName);
+                            
+                            var errorResult = new AiMessageContent
+                            {
+                                Type = "tool_result",
+                                ToolUseId = toolUse.ToolUseId,
+                                ToolResult = $"Tool execution error: {ex.Message}",
+                                IsError = true
+                            };
+                            
+                            toolResults.Add(errorResult);
+                        }
+                    }
+
+                    // Add tool results to conversation history
+                    _conversationHistory.Add(new AiMessage
+                    {
+                        Role = "user",
+                        Content = toolResults
+                    });
+                }
+            }
+
+            progressCallback?.Report("Maximum processing rounds reached");
+            _logger.LogWarning("Maximum processing rounds ({MaxRounds}) reached", maxRounds);
+            return Result<string>.Failure("Maximum processing rounds reached. Operation may be too complex.");
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            progressCallback?.Report("Operation was cancelled");
+            _logger.LogInformation("Message processing was cancelled");
+            return Result<string>.Failure("Operation was cancelled");
+        }
+        catch (Exception ex)
+        {
+            progressCallback?.Report($"Unexpected error: {ex.Message}");
+            _logger.LogError(ex, "Unexpected error during message processing");
+            return Result<string>.Failure($"Unexpected error: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// Check if tool uses can be processed in batch for better performance
+    /// </summary>
+    private bool CanBatchProcess(List<AiMessageContent> toolUses)
+    {
+        // Sadece belirli operasyonlar batch processing için uygun
+        var batchableOperations = new[] { 
+            "read_data_from_excel", 
+            "get_workbook_metadata", 
+            "create_chart", 
+            "format_range",
+            "create_worksheet",
+            "get_worksheet_names"
+        };
+        
+        var canBatch = toolUses.Count > 1 && toolUses.All(tu => tu.ToolName != null && batchableOperations.Contains(tu.ToolName));
+        _logger.LogInformation("CanBatchProcess: {Count} tools - CanBatch: {CanBatch}", toolUses.Count, canBatch);
+        
+        return canBatch;
+    }
+
+    /// <summary>
+    /// Process multiple tools in batch for better performance
+    /// </summary>
+    private async Task<List<AiMessageContent>> ProcessToolsBatch(
+        List<AiMessageContent> toolUses, 
+        IProgress<string>? progressCallback, 
+        CancellationToken cancellationToken)
+    {
+        var validToolCalls = new List<(string id, string toolName, object? arguments)>();
+        var results = new List<AiMessageContent>();
+
+        // First validate all operations for data protection
+        foreach (var toolUse in toolUses)
+        {
+            if (string.IsNullOrEmpty(toolUse.ToolUseId) || string.IsNullOrEmpty(toolUse.ToolName))
+            {
+                results.Add(new AiMessageContent
+                {
+                    Type = "tool_result",
+                    ToolUseId = toolUse.ToolUseId,
+                    ToolResult = "Invalid tool use: missing ID or name",
+                    IsError = true
+                });
+                continue;
+            }
+
+            // Validate operation for data protection
+            if (_currentExcelAnalysis != null)
+            {
+                var validationResult = _excelProtection.ValidateOperation(
+                    toolUse.ToolName!,
+                    toolUse.ToolInput ?? new object(),
+                    _currentExcelAnalysis);
+
+                if (!validationResult.IsSuccess)
+                {
+                    _logger.LogWarning("Batch operation validation failed for {Tool}: {Error}", toolUse.ToolName, validationResult.Error);
+                    results.Add(new AiMessageContent
+                    {
+                        Type = "tool_result",
+                        ToolUseId = toolUse.ToolUseId,
+                        ToolResult = $"Operation blocked for data protection: {validationResult.Error}",
+                        IsError = true
+                    });
+                    continue;
+                }
+            }
+
+            // Add to valid tool calls
+            validToolCalls.Add((toolUse.ToolUseId!, toolUse.ToolName!, toolUse.ToolInput));
+        }
+
+        // Execute valid tool calls in batch
+        if (validToolCalls.Any())
+        {
+            progressCallback?.Report($"Executing {validToolCalls.Count} validated operations in parallel...");
+            var batchResult = await _mcpClient.CallToolsBatchAsync(validToolCalls, cancellationToken);
+            
+            // Process batch results
+            foreach (var (id, toolName, _) in validToolCalls)
+            {
+                if (batchResult.IsSuccess && batchResult.Value!.TryGetValue(id, out var result))
+                {
+                    var isError = result.StartsWith("ERROR:");
+                    results.Add(new AiMessageContent
+                    {
+                        Type = "tool_result",
+                        ToolUseId = id,
+                        ToolResult = isError ? result.Substring(7) : result,
+                        IsError = isError
+                    });
+                    
+                    _logger.LogInformation("Batch tool {ToolName} executed: {Success}", toolName, !isError ? "Success" : "Error");
+                }
+                else
+                {
+                    results.Add(new AiMessageContent
+                    {
+                        Type = "tool_result",
+                        ToolUseId = id,
+                        ToolResult = "Batch processing failed for this operation",
+                        IsError = true
+                    });
+                }
+            }
+        }
+
+        progressCallback?.Report($"Completed batch processing of {results.Count} operations");
+        return results;
+    }
 }

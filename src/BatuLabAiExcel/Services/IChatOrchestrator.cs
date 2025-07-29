@@ -16,6 +16,15 @@ public interface IChatOrchestrator
     Task<Result<string>> ProcessMessageAsync(string message, CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// Process a user message with progress reporting for large operations
+    /// </summary>
+    /// <param name="message">User message</param>
+    /// <param name="progressCallback">Progress callback</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>Final response from AI</returns>
+    Task<Result<string>> ProcessMessageWithProgressAsync(string message, IProgress<string>? progressCallback = null, CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Set the current AI provider
     /// </summary>
     /// <param name="provider">Provider name (Claude, Gemini)</param>

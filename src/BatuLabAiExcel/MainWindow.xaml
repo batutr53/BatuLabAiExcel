@@ -560,16 +560,32 @@
                         </ScrollViewer>
 
                         <!-- Status -->
+                        <!-- Busy Status Bar -->
                         <Border Grid.Row="2" 
                                 Background="{StaticResource WarningBrush}"
                                 CornerRadius="0,0,12,12"
                                 Padding="20,10"
                                 Visibility="{Binding IsBusy, Converter={StaticResource BooleanToVisibilityConverter}}">
-                            <StackPanel Orientation="Horizontal">
-                                <TextBlock Text="⏳" Margin="0,0,8,0"/>
-                                <TextBlock Text="{Binding StatusMessage}" 
-                                           Foreground="White"
-                                           FontWeight="SemiBold"/>
+                            <StackPanel>
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="⏳" Margin="0,0,8,0"/>
+                                    <TextBlock Text="{Binding StatusMessage}" 
+                                               Foreground="White"
+                                               FontWeight="SemiBold"/>
+                                </StackPanel>
+                                
+                                <!-- Progress Indicator for Large Data Operations -->
+                                <StackPanel Visibility="{Binding ShowProgress, Converter={StaticResource BooleanToVisibilityConverter}}"
+                                           Margin="0,8,0,0">
+                                    <TextBlock Text="{Binding ProgressText}" 
+                                               Foreground="White"
+                                               FontSize="12"
+                                               Margin="0,0,0,4"/>
+                                    <ProgressBar Height="4" 
+                                                 IsIndeterminate="True"
+                                                 Background="{StaticResource CardBrush}"
+                                                 Foreground="{StaticResource SecondaryBrush}"/>
+                                </StackPanel>
                             </StackPanel>
                         </Border>
                     </Grid>

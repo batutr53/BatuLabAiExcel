@@ -737,6 +737,103 @@ public class McpClient : IMcpClient
         return Interlocked.Increment(ref _requestId).ToString();
     }
 
+    /// <summary>
+    /// Call multiple tools in parallel for better performance with large data
+    /// </summary>
+    public async Task<Result<Dictionary<string, string>>> CallToolsBatchAsync(
+        List<(string id, string toolName, object? arguments)> toolCalls, 
+        CancellationToken cancellationToken = default)
+    {
+        var initResult = await EnsureInitializedAsync(cancellationToken);
+        if (!initResult.IsSuccess)
+        {
+            return Result<Dictionary<string, string>>.Failure(initResult.Error ?? "Initialization failed");
+        }
+
+        var results = new Dictionary<string, string>();
+        var semaphore = new SemaphoreSlim(5, 5); // Limit concurrent operations
+        
+        try
+        {
+            var tasks = toolCalls.Select(async toolCall =>
+            {
+                await semaphore.WaitAsync(cancellationToken);
+                try
+                {
+                    var result = await CallToolAsync(toolCall.toolName, toolCall.arguments, cancellationToken);
+                    return (toolCall.id, result);
+                }
+                finally
+                {
+                    semaphore.Release();
+                }
+            });
+
+            var completedTasks = await Task.WhenAll(tasks);
+            
+            foreach (var (id, result) in completedTasks)
+            {
+                if (result.IsSuccess)
+                {
+                    results[id] = result.Value!;
+                }
+                else
+                {
+                    results[id] = $"ERROR: {result.Error}";
+                    _logger.LogWarning("Batch tool call {Id} failed: {Error}", id, result.Error);
+                }
+            }
+
+            return Result<Dictionary<string, string>>.Success(results);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error in batch tool calls");
+            return Result<Dictionary<string, string>>.Failure($"Batch operation failed: {ex.Message}");
+        }
+        finally
+        {
+            semaphore.Dispose();
+        }
+    }
+
+    /// <summary>
+    /// Call a tool with progress reporting for large operations
+    /// </summary>
+    public async Task<Result<string>> CallToolWithProgressAsync(
+        string toolName, 
+        object? arguments, 
+        IProgress<string>? progressCallback = null, 
+        CancellationToken cancellationToken = default)
+    {
+        progressCallback?.Report($"Starting {toolName} operation...");
+        
+        var initResult = await EnsureInitializedAsync(cancellationToken);
+        if (!initResult.IsSuccess)
+        {
+            progressCallback?.Report($"Initialization failed: {initResult.Error}");
+            return Result<string>.Failure(initResult.Error ?? "Initialization failed");
+        }
+
+        progressCallback?.Report($"Executing {toolName}...");
+        
+        // Use existing CallToolAsync but add progress reporting
+        var startTime = DateTime.UtcNow;
+        var result = await CallToolAsync(toolName, arguments, cancellationToken);
+        var duration = DateTime.UtcNow - startTime;
+
+        if (result.IsSuccess)
+        {
+            progressCallback?.Report($"{toolName} completed in {duration.TotalMilliseconds:F0}ms");
+        }
+        else
+        {
+            progressCallback?.Report($"{toolName} failed after {duration.TotalMilliseconds:F0}ms: {result.Error}");
+        }
+
+        return result;
+    }
+
     public void Dispose()
     {
         lock (_processLock)

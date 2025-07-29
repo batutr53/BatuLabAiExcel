@@ -53,6 +53,15 @@ public partial class MainViewModel : ViewModelBase
     [ObservableProperty]
     private string _licenseStatusText = string.Empty;
 
+    [ObservableProperty]
+    private string _progressText = string.Empty;
+
+    [ObservableProperty]
+    private bool _showProgress = false;
+
+    [ObservableProperty]
+    private bool _isLargeDataOperation = false;
+
     public event Action? RequestScrollToBottom;
 
     public MainViewModel(
@@ -83,7 +92,13 @@ public partial class MainViewModel : ViewModelBase
             "• Apply formulas and calculations\n\n" +
             "🛡️ DATA PROTECTION: I will NEVER modify, delete, or rearrange your existing data unless you specifically ask me to. " +
             "I only perform the exact actions you request and preserve all your existing work.\n\n" +
-            "Example: \"Read data from Sheet1!A1:C10 and summarize it for me.\""));
+            "Example: \"Read data from Sheet1!A1:C10 and summarize it for me.\"\n\n" +
+            "📊 PERFORMANCE: For testing large data operations, try: 'analyze all data' or 'process entire sheet'"));
+
+        // Progress başlangıçta gizli - ihtiyaç olunca gösterilecek
+        ShowProgress = false;
+        ProgressText = string.Empty;
+        IsLargeDataOperation = false;
     }
 
     [RelayCommand(CanExecute = nameof(CanCancel))]
@@ -267,20 +282,7 @@ public partial class MainViewModel : ViewModelBase
             // Include current file information in the context with Excel protection directives
             var contextualMessage = string.IsNullOrEmpty(CurrentFilePath) 
                 ? $"No Excel file is currently selected. User message: {userMessage}"
-                : $@"Current Excel file: {CurrentFileName} (path: {CurrentFilePath}).
-
-CRITICAL EXCEL PROTECTION RULES:
-1. NEVER delete or clear existing data unless explicitly requested by the user
-2. NEVER modify existing cell formatting unless explicitly requested
-3. NEVER change existing formulas unless explicitly requested  
-4. NEVER rearrange or move existing data unless explicitly requested
-5. When reading data, use READ-ONLY operations
-6. When adding new data, use APPEND operations or write to empty cells only
-7. Always preserve existing worksheets, charts, and pivot tables
-8. Only perform the specific action requested by the user
-9. If unclear about what to modify, ASK the user for clarification first
-
-User message: {userMessage}";
+                : $"Current Excel file: {CurrentFileName} (path: {CurrentFilePath}). CRITICAL EXCEL PROTECTION RULES - NEVER delete or clear existing data unless explicitly requested by the user - NEVER modify existing cell formatting unless explicitly requested - NEVER change existing formulas unless explicitly requested - NEVER rearrange or move existing data unless explicitly requested - When reading data use READ-ONLY operations - When adding new data use APPEND operations or write to empty cells only - Always preserve existing worksheets charts and pivot tables - Only perform the specific action requested by the user - If unclear about what to modify ASK the user for clarification first. User message: {userMessage}";
 
             // Update status and run processing on background thread
             await System.Windows.Application.Current.Dispatcher.InvokeAsync(() =>
@@ -288,19 +290,65 @@ User message: {userMessage}";
                 SetBusy(true, "Processing with AI...");
             });
 
+            // Detect if this might be a large data operation
+            var isLargeDataOperation = DetectLargeDataOperation(userMessage);
+            
+            // Gerçek algılama mantığını kullan
+            _logger.LogInformation("Large data operation detected: {IsLarge} for message: {Message}", isLargeDataOperation, userMessage);
+            
             // Run the processing on a background thread to avoid UI blocking
-            var result = await Task.Run(async () => 
+            Result<string> result;
+            
+            if (isLargeDataOperation)
             {
-                try
+                // Use progress reporting for large operations
+                await System.Windows.Application.Current.Dispatcher.InvokeAsync(() =>
                 {
-                    return await _chatOrchestrator.ProcessMessageAsync(contextualMessage, _currentOperationCts.Token);
-                }
-                catch (Exception ex)
+                    IsLargeDataOperation = true;
+                    ShowProgress = true;
+                    ProgressText = "Preparing for large data operation...";
+                });
+
+                var progress = new Progress<string>(progressMessage =>
                 {
-                    _logger.LogError(ex, "Error in background processing");
-                    return Result<string>.Failure($"Background processing error: {ex.Message}");
-                }
-            }, _currentOperationCts.Token);
+                    System.Windows.Application.Current.Dispatcher.InvokeAsync(() =>
+                    {
+                        ProgressText = progressMessage;
+                    });
+                });
+
+                result = await Task.Run(async () => 
+                {
+                    try
+                    {
+                        return await _chatOrchestrator.ProcessMessageWithProgressAsync(
+                            contextualMessage, 
+                            progress, 
+                            _currentOperationCts.Token);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, "Error in background processing with progress");
+                        return Result<string>.Failure($"Background processing error: {ex.Message}");
+                    }
+                }, _currentOperationCts.Token);
+            }
+            else
+            {
+                // Use standard processing for normal operations
+                result = await Task.Run(async () => 
+                {
+                    try
+                    {
+                        return await _chatOrchestrator.ProcessMessageAsync(contextualMessage, _currentOperationCts.Token);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, "Error in background processing");
+                        return Result<string>.Failure($"Background processing error: {ex.Message}");
+                    }
+                }, _currentOperationCts.Token);
+            }
 
             if (_currentOperationCts.Token.IsCancellationRequested)
             {
@@ -310,6 +358,11 @@ User message: {userMessage}";
             // Update UI on the UI thread
             await System.Windows.Application.Current.Dispatcher.InvokeAsync(() =>
             {
+                // Hide progress UI
+                ShowProgress = false;
+                IsLargeDataOperation = false;
+                ProgressText = string.Empty;
+
                 if (result.IsSuccess)
                 {
                     var assistantMessage = ChatMessage.CreateAssistantMessage(result.Value ?? "No response received.");
@@ -330,6 +383,11 @@ User message: {userMessage}";
         {
             await System.Windows.Application.Current.Dispatcher.InvokeAsync(() =>
             {
+                // Hide progress UI
+                ShowProgress = false;
+                IsLargeDataOperation = false;
+                ProgressText = string.Empty;
+                
                 var errorMessage = ChatMessage.CreateSystemMessage(
                     "⏸️ Operation was cancelled or timed out.\n\nTry breaking your request into smaller parts or check your connection.");
                 Messages.Add(errorMessage);
@@ -584,5 +642,28 @@ This application helps you work with Excel files using natural language.
         {
             _logger.LogError(ex, "Error showing about dialog");
         }
+    }
+
+    /// <summary>
+    /// Detect if a message might involve large data operations that would benefit from progress reporting
+    /// </summary>
+    private bool DetectLargeDataOperation(string message)
+    {
+        var largeDataKeywords = new[]
+        {
+            "all data", "entire sheet", "whole workbook", "large dataset", "thousands", "hundreds",
+            "bulk", "batch", "import", "export", "copy all", "process all", "analyze all",
+            "pivot table", "chart", "massive", "big data", "full range", "complete data",
+            // Daha fazla keyword ekleyelim
+            "tüm veri", "tüm sheet", "bütün", "toplu", "hepsi", "analiz et", "graf", "grafik"
+        };
+
+        var lowerMessage = message.ToLowerInvariant();
+        var isLarge = largeDataKeywords.Any(keyword => lowerMessage.Contains(keyword));
+        
+        // Debug için log ekleyelim
+        _logger.LogInformation("DetectLargeDataOperation: Message='{Message}' -> IsLarge={IsLarge}", message, isLarge);
+        
+        return isLarge;
     }
 }
