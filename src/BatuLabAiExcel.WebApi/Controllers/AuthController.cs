@@ -102,6 +102,16 @@ public class AuthController : ControllerBase
     }
 
     /// <summary>
+    /// Get current user profile (alias for /me endpoint)
+    /// </summary>
+    [HttpGet("profile")]
+    [Authorize]
+    public async Task<ActionResult<ApiResponse<ApiUserInfo>>> GetProfile(CancellationToken cancellationToken = default)
+    {
+        return await GetCurrentUser(cancellationToken);
+    }
+
+    /// <summary>
     /// Validate token (for testing purposes)
     /// </summary>
     [HttpPost("validate")]

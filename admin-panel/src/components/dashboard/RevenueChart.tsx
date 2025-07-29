@@ -16,7 +16,7 @@ export function RevenueChart() {
     refetchInterval: 300000, // 5 minutes
   });
 
-  const chartData = (data?.data || []) as Array<{ date: string; value: number }>;
+  const chartData = (data?.data?.data || []) as Array<{ date: string; value: number }>;
 
   const periods = [
     { key: 'week' as Period, label: 'Haftalık' },

@@ -8,7 +8,7 @@ import {
   PlusIcon,
   EnvelopeIcon
 } from '@heroicons/react/24/outline';
-import { notificationAPI } from '../../services/api';
+import { apiClient } from '../../services/api';
 import type { FilterState, Notification } from '../../types';
 import { clsx } from 'clsx';
 import { formatDistanceToNow } from 'date-fns';
@@ -26,11 +26,12 @@ export function NotificationsPage() {
 
   const { data, isLoading, error } = useQuery({
     queryKey: ['notifications', filters],
-    queryFn: () => notificationAPI.getNotifications(),
+    queryFn: () => apiClient.getNotifications(),
+    refetchInterval: 30000, // Refetch every 30 seconds
   });
 
   const markAsReadMutation = useMutation({
-    mutationFn: (notificationId: string) => notificationAPI.markNotificationAsRead(notificationId),
+    mutationFn: (notificationId: string) => apiClient.markNotificationAsRead(notificationId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['notifications'] });
       toast.success('Bildirim okundu olarak işaretlendi!');
@@ -40,9 +41,9 @@ export function NotificationsPage() {
     }
   });
 
-  const notifications = data?.data?.data || [];
-  const totalCount = data?.data?.totalCount || 0;
-  const totalPages = data?.data?.totalPages || 1;
+  const notifications = data?.data || [];
+  const totalCount = notifications.length;
+  const totalPages = 1; // Since backend doesn't implement pagination yet
 
   const handlePageChange = (page: number) => {
     setFilters(prev => ({ ...prev, page }));

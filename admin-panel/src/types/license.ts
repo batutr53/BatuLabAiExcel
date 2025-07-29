@@ -1,11 +1,18 @@
-// License Management Types
+// License Management Types  
 export interface License {
   id: string;
-  userId: string;
-  type: 'trial' | 'monthly' | 'yearly' | 'lifetime';
-  status: 'active' | 'expired' | 'suspended';
+  licenseKey: string;
+  type: number;
+  status: number;
+  isActive: boolean;
   startDate: string;
-  expiryDate?: string;
+  expiresAt?: string;
   createdAt: string;
-  features?: string[];
+  user: {
+    id: string;
+    email: string;
+    firstName: string;
+    lastName: string;
+    fullName: string;
+  };
 }

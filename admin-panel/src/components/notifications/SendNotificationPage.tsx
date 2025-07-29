@@ -4,7 +4,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { ArrowLeftIcon, PaperAirplaneIcon, CheckIcon, XMarkIcon } from '@heroicons/react/24/outline';
-import { notificationAPI, userAPI } from '../../services/api';
+import { apiClient } from '../../services/api';
 import toast from 'react-hot-toast';
 import { clsx } from 'clsx';
 import { useQuery } from '@tanstack/react-query';
@@ -38,7 +38,7 @@ export function SendNotificationPage() {
 
   const { data: usersData, isLoading: usersLoading } = useQuery({
     queryKey: ['users-for-notification'],
-    queryFn: () => userAPI.getUsers({ page: 1, pageSize: 9999 }), // Fetch all users for selection
+    queryFn: () => apiClient.getUsers({ page: 1, pageSize: 9999 }), // Fetch all users for selection
     enabled: !isBroadcast,
   });
 
@@ -46,14 +46,14 @@ export function SendNotificationPage() {
     setIsSubmitting(true);
     try {
       if (data.isBroadcast) {
-        await notificationAPI.broadcastNotification(data.message, data.type);
+        await apiClient.broadcastNotification(data.message, data.type);
         toast.success('Bildirim tüm kullanıcılara başarıyla gönderildi!');
       } else {
         if (!data.userIds || data.userIds.length === 0) {
           toast.error('Lütfen bildirim göndermek için en az bir kullanıcı seçin.');
           return;
         }
-        await notificationAPI.sendNotification(data.userIds, data.message, data.type);
+        await apiClient.sendNotification(data.userIds, data.message, data.type);
         toast.success('Bildirim seçilen kullanıcılara başarıyla gönderildi!');
       }
       navigate('/notifications');

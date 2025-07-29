@@ -159,6 +159,70 @@ static async Task SeedTestDataAsync(IServiceProvider serviceProvider)
     context.Payments.AddRange(testPayments);
     await context.SaveChangesAsync();
 
+    // Create test notifications for admin user
+    var adminUser = await context.Users.FirstOrDefaultAsync(u => u.Email == "admin@batulab.com");
+    if (adminUser != null)
+    {
+        var testNotifications = new List<Notification>
+        {
+            new Notification
+            {
+                Id = Guid.NewGuid(),
+                UserId = adminUser.Id,
+                Title = "Sistem Güncellemesi",
+                Message = "v2.1.0 güncellemesi başarıyla tamamlandı. Yeni özellikler ve hata düzeltmeleri içeriyor.",
+                Type = "success",
+                CreatedAt = DateTime.UtcNow.AddHours(-1),
+                IsRead = false
+            },
+            new Notification
+            {
+                Id = Guid.NewGuid(),
+                UserId = adminUser.Id,
+                Title = "Yeni Kullanıcı Kaydı",
+                Message = "5 yeni kullanıcı sisteme kayıt oldu. Toplam aktif kullanıcı sayısı 142'ye yükseldi.",
+                Type = "info",
+                CreatedAt = DateTime.UtcNow.AddMinutes(-30),
+                IsRead = false
+            },
+            new Notification
+            {
+                Id = Guid.NewGuid(),
+                UserId = adminUser.Id,
+                Title = "Ödeme Alındı",
+                Message = "₺2,500 tutarında ödeme başarıyla işlendi. Müşteri: test@example.com",
+                Type = "success",
+                CreatedAt = DateTime.UtcNow.AddMinutes(-15),
+                IsRead = false
+            },
+            new Notification
+            {
+                Id = Guid.NewGuid(),
+                UserId = adminUser.Id,
+                Title = "Sistem Uyarısı",
+                Message = "Disk kullanımı %85'e ulaştı. Lütfen disk alanını kontrol edin.",
+                Type = "warning",
+                CreatedAt = DateTime.UtcNow.AddMinutes(-5),
+                IsRead = false
+            },
+            new Notification
+            {
+                Id = Guid.NewGuid(),
+                UserId = adminUser.Id,
+                Title = "Hoş Geldiniz",
+                Message = "Admin paneline hoş geldiniz! Tüm özellikler aktif ve kullanıma hazır.",
+                Type = "info",
+                CreatedAt = DateTime.UtcNow.AddDays(-1),
+                IsRead = true
+            }
+        };
+
+        context.Notifications.AddRange(testNotifications);
+        await context.SaveChangesAsync();
+        
+        logger.LogInformation("Created {NotificationCount} test notifications for admin user", testNotifications.Count);
+    }
+
     logger.LogInformation("Test data seeded successfully: {UserCount} users, {LicenseCount} licenses, {PaymentCount} payments", 
         testUsers.Count, testLicenses.Count, testPayments.Count);
 }
@@ -355,19 +419,26 @@ try
 
     app.MapControllers();
 
-    // Auto-migrate database
+    // Initialize database
     var databaseSettings = builder.Configuration.GetSection("Database").Get<AppConfiguration.DatabaseSettings>();
+    using var scope = app.Services.CreateScope();
+    var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    
     if (databaseSettings?.EnableAutoMigration == true)
     {
-        using var scope = app.Services.CreateScope();
-        var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
         await context.Database.MigrateAsync();
         Log.Information("Database migration completed");
-        
-        // Seed admin user and test data
-        await SeedAdminUserAsync(scope.ServiceProvider);
-        await SeedTestDataAsync(scope.ServiceProvider);
     }
+    else
+    {
+        // Ensure database is created
+        await context.Database.EnsureCreatedAsync();
+        Log.Information("Database ensured created");
+    }
+    
+    // Seed admin user and test data
+    await SeedAdminUserAsync(scope.ServiceProvider);
+    await SeedTestDataAsync(scope.ServiceProvider);
 
     Log.Information("Starting Office AI - Batu Lab Web API");
     await app.RunAsync();

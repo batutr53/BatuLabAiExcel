@@ -11,31 +11,15 @@ import {
   PlusIcon,
   TrashIcon,
   ClockIcon,
-  CalendarIcon
+  CalendarIcon,
+  PencilIcon
 } from '@heroicons/react/24/outline';
 import { licenseAPI } from '../../services/api';
-import type { FilterState } from '../../types';
+import type { FilterState, License } from '../../types';
 import { clsx } from 'clsx';
 import { ExtendLicenseModal } from './ExtendLicenseModal';
 import { ConfirmModal } from './ConfirmModal';
-
-interface License {
-  id: string;
-  licenseKey: string;
-  type: number;
-  status: number;
-  isActive: boolean;
-  startDate: string;
-  expiresAt?: string;
-  createdAt: string;
-  user: {
-    id: string;
-    email: string;
-    firstName: string;
-    lastName: string;
-    fullName: string;
-  };
-}
+import { LicenseEditModal } from './LicenseEditModal';
 
 const LICENSE_TYPES = ['Trial', 'Monthly', 'Yearly', 'Lifetime'];
 const LICENSE_STATUS = ['Pending', 'Active', 'Expired', 'Cancelled', 'Suspended'];
@@ -57,8 +41,6 @@ export function LicensesPage() {
     licenseId?: string;
     licenseName?: string;
   }>({ isOpen: false, type: 'revoke' });
-  const [editModal, setEditModal] = useState<{ isOpen: boolean; license?: License }>({ isOpen: false });
-  const [editModal, setEditModal] = useState<{ isOpen: boolean; license?: License }>({ isOpen: false });
   const [editModal, setEditModal] = useState<{ isOpen: boolean; license?: License }>({ isOpen: false });
   
   const queryClient = useQueryClient();
@@ -101,6 +83,19 @@ export function LicensesPage() {
     },
     onError: (error) => {
       toast.error('Lisans silinirken hata oluştu: ' + (error.message || 'Bilinmeyen hata'));
+    }
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: ({ id, data }: { id: string; data: Partial<License> }) => licenseAPI.updateLicense(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['licenses'] });
+      setActiveDropdown(null);
+      setEditModal({ isOpen: false });
+      toast.success('Lisans başarıyla güncellendi');
+    },
+    onError: (error: any) => {
+      toast.error('Lisans güncellenirken hata oluştu: ' + (error.message || 'Bilinmeyen hata'));
     }
   });
 
@@ -169,6 +164,20 @@ export function LicensesPage() {
       await deleteMutation.mutateAsync(confirmModal.licenseId);
     }
     setConfirmModal({ isOpen: false, type: 'revoke' });
+  };
+
+  const onEditSave = async (data: Partial<License>) => {
+    if (!editModal.license?.id) return;
+    
+    await updateMutation.mutateAsync({
+      id: editModal.license.id,
+      data: {
+        type: data.type,
+        status: data.status,
+        isActive: data.isActive,
+        expiresAt: data.expiresAt
+      }
+    });
   };
 
   const formatDate = (dateString: string) => {
@@ -570,6 +579,14 @@ export function LicensesPage() {
         onConfirm={onExtendConfirm}
         isLoading={extendMutation.isPending}
         licenseName={extendModal.licenseName}
+      />
+      
+      <LicenseEditModal
+        isOpen={editModal.isOpen}
+        onClose={() => setEditModal({ isOpen: false })}
+        onSave={onEditSave}
+        license={editModal.license}
+        isLoading={updateMutation.isPending}
       />
       
       <ConfirmModal

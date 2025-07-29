@@ -91,7 +91,7 @@ export function RecentActivity({ recentSignups, recentPayments }: RecentActivity
       {/* Content */}
       <div className="p-6">
         {activeTab === 'signups' && (
-          <div className="space-y-4">
+          <div className="space-y-2">
             {recentSignups.length === 0 ? (
               <div className="text-center py-8 text-gray-500">
                 <UserIcon className="w-14 h-14 mx-auto mb-3 opacity-50" />
@@ -101,41 +101,35 @@ export function RecentActivity({ recentSignups, recentPayments }: RecentActivity
               recentSignups.map((user) => (
                 <div
                   key={user.id}
-                  className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+                  className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
                 >
-                  <div className="flex items-center space-x-4">
-                    <div className="w-12 h-12 bg-primary-100 rounded-full flex items-center justify-center flex-shrink-0">
-                      <UserIcon className="w-6 h-6 text-primary-600" />
+                  <div className="flex items-center space-x-3 flex-1 min-w-0">
+                    <div className="w-8 h-8 bg-primary-100 rounded-full flex items-center justify-center flex-shrink-0">
+                      <UserIcon className="w-4 h-4 text-primary-600" />
                     </div>
-                    <div>
-                      <p className="font-medium text-gray-900 text-base">
-                        {user.name || user.email}
-                      </p>
-                      <p className="text-sm text-gray-600">{user.email}</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center space-x-4">
-                    <div className="text-right">
-                      <p className="text-sm text-gray-600">
-                        {formatDistanceToNow(new Date(user.createdAt), {
-                          addSuffix: true,
-                          locale: tr,
-                        })}
-                      </p>
-                      <div className="flex items-center justify-end space-x-1 mt-1">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center space-x-2">
+                        <p className="font-medium text-gray-900 text-sm truncate">
+                          {user.name || user.email}
+                        </p>
                         <div
                           className={clsx(
-                            'w-2.5 h-2.5 rounded-full',
+                            'w-2 h-2 rounded-full flex-shrink-0',
                             user.isActive ? 'bg-green-400' : 'bg-gray-400'
                           )}
                         />
-                        <span className="text-xs text-gray-500">
-                          {user.isActive ? 'Aktif' : 'Pasif'}
-                        </span>
                       </div>
                     </div>
-                    <button className="p-2 text-gray-400 hover:text-gray-600 hover:bg-white rounded-lg">
-                      <EyeIcon className="w-5 h-5" />
+                  </div>
+                  <div className="flex items-center space-x-2 flex-shrink-0">
+                    <p className="text-xs text-gray-500">
+                      {formatDistanceToNow(new Date(user.createdAt), {
+                        addSuffix: true,
+                        locale: tr,
+                      })}
+                    </p>
+                    <button className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-white rounded">
+                      <EyeIcon className="w-4 h-4" />
                     </button>
                   </div>
                 </div>
@@ -145,7 +139,7 @@ export function RecentActivity({ recentSignups, recentPayments }: RecentActivity
         )}
 
         {activeTab === 'payments' && (
-          <div className="space-y-4">
+          <div className="space-y-2">
             {recentPayments.length === 0 ? (
               <div className="text-center py-8 text-gray-500">
                 <CreditCardIcon className="w-14 h-14 mx-auto mb-3 opacity-50" />
@@ -157,37 +151,32 @@ export function RecentActivity({ recentSignups, recentPayments }: RecentActivity
                 return (
                   <div
                     key={payment.id}
-                    className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+                    className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
                   >
-                    <div className="flex items-center space-x-4">
-                      <div className={clsx('w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0', statusConfig.bg)}>
-                        <statusConfig.icon className={clsx('w-6 h-6', statusConfig.color)} />
+                    <div className="flex items-center space-x-3 flex-1 min-w-0">
+                      <div className={clsx('w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0', statusConfig.bg)}>
+                        <statusConfig.icon className={clsx('w-4 h-4', statusConfig.color)} />
                       </div>
-                      <div>
-                        <p className="font-medium text-gray-900 text-base">
-                          ₺{payment.amount.toLocaleString()} {payment.currency}
-                        </p>
-                        <p className="text-sm text-gray-600">
-                          {payment.paymentMethod || 'Kredi Kartı'}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex items-center space-x-4">
-                      <div className="text-right">
-                        <p className="text-sm text-gray-600">
-                          {formatDistanceToNow(new Date(payment.createdAt), {
-                            addSuffix: true,
-                            locale: tr,
-                          })}
-                        </p>
-                        <div className="flex items-center justify-end space-x-1 mt-1">
-                          <span className={clsx('text-xs font-medium', statusConfig.color)}>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center space-x-2">
+                          <p className="font-medium text-gray-900 text-sm">
+                            ₺{payment.amount.toLocaleString()}
+                          </p>
+                          <span className={clsx('text-xs font-medium px-2 py-0.5 rounded-full', statusConfig.bg, statusConfig.color)}>
                             {statusConfig.text}
                           </span>
                         </div>
                       </div>
-                      <button className="p-2 text-gray-400 hover:text-gray-600 hover:bg-white rounded-lg">
-                        <EyeIcon className="w-5 h-5" />
+                    </div>
+                    <div className="flex items-center space-x-2 flex-shrink-0">
+                      <p className="text-xs text-gray-500">
+                        {formatDistanceToNow(new Date(payment.createdAt), {
+                          addSuffix: true,
+                          locale: tr,
+                        })}
+                      </p>
+                      <button className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-white rounded">
+                        <EyeIcon className="w-4 h-4" />
                       </button>
                     </div>
                   </div>

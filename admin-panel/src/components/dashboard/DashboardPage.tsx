@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { 
   DocumentTextIcon, 
   ArrowTrendingUpIcon,
@@ -14,6 +14,7 @@ import {
   ArrowTrendingDownIcon as TrendingDownIcon,
 } from '@heroicons/react/24/outline';
 import { dashboardAPI } from '../../services/api';
+import toast from 'react-hot-toast';
 import { StatsCard } from './StatsCard';
 import type { StatsCardProps } from './StatsCard';
 import { RecentActivity } from './RecentActivity';
@@ -23,17 +24,34 @@ import { SystemStatus } from './SystemStatus';
 import { QuickActions } from './QuickActions';
 
 export function DashboardPage() {
-  const { data: statsData, isLoading: statsLoading } = useQuery({
+  const queryClient = useQueryClient();
+
+  const { data: statsData, isLoading: statsLoading, refetch: refetchStats } = useQuery({
     queryKey: ['dashboard-stats'],
     queryFn: () => dashboardAPI.getStats(),
     refetchInterval: 30000, // Refetch every 30 seconds
   });
 
-  const { data: systemData, isLoading: systemLoading } = useQuery({
+  const { data: systemData, isLoading: systemLoading, refetch: refetchSystem } = useQuery({
     queryKey: ['system-status'],
     queryFn: () => dashboardAPI.getSystemStatus(),
     refetchInterval: 10000, // Refetch every 10 seconds
   });
+
+  const handleRefresh = async () => {
+    try {
+      await Promise.all([
+        refetchStats(),
+        refetchSystem(),
+        queryClient.invalidateQueries({ queryKey: ['user-growth'] }),
+        queryClient.invalidateQueries({ queryKey: ['revenue-analytics'] }),
+        queryClient.invalidateQueries({ queryKey: ['notifications'] }),
+      ]);
+      toast.success('Dashboard başarıyla yenilendi');
+    } catch (error) {
+      toast.error('Dashboard yenilenirken hata oluştu');
+    }
+  };
 
   const stats = statsData?.data;
   const systemStatus = systemData?.data;
@@ -133,9 +151,13 @@ export function DashboardPage() {
           </p>
         </div>
         <div className="mt-4 sm:mt-0">
-          <button className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-primary-600 to-primary-700 text-white text-sm font-medium rounded-xl hover:from-primary-700 hover:to-primary-800 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105">
-            <SparklesIcon className="w-4 h-4 mr-2" />
-            Yenile
+          <button 
+            onClick={handleRefresh}
+            disabled={statsLoading || systemLoading}
+            className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-primary-600 to-primary-700 text-white text-sm font-medium rounded-xl hover:from-primary-700 hover:to-primary-800 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+          >
+            <SparklesIcon className={`w-4 h-4 mr-2 ${(statsLoading || systemLoading) ? 'animate-spin' : ''}`} />
+            {(statsLoading || systemLoading) ? 'Yenileniyor...' : 'Yenile'}
           </button>
         </div>
       </div>
@@ -207,12 +229,12 @@ export function DashboardPage() {
       {/* Bottom Section */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Recent Activity */}
-        <div className="lg:col-span-2 animate-slide-up" style={{ animationDelay: '0.4s' }}>
+        <div className="lg:col-span-1 animate-slide-up" style={{ animationDelay: '0.4s' }}>
           <RecentActivity recentSignups={stats?.recentSignups || []} recentPayments={stats?.recentPayments || []} />
         </div>
 
-        {/* Right Column */}
-        <div className="space-y-6">
+        {/* System Status and Quick Actions Side by Side */}
+        <div className="lg:col-span-2 grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* System Status */}
           {systemStatus && (
             <div className="animate-slide-up" style={{ animationDelay: '0.5s' }}>

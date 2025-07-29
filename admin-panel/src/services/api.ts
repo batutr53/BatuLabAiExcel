@@ -56,7 +56,9 @@ class ApiClient {
 
   // Generic API methods
   private async get<T>(url: string, params?: Record<string, unknown> | FilterState | LoginCredentials): Promise<T> {
+    console.log(`GET ${url}:`, params);
     const response: AxiosResponse<T> = await this.client.get(url, { params });
+    console.log(`GET ${url} response:`, response.data);
     return response.data;
   }
 
@@ -66,7 +68,9 @@ class ApiClient {
   }
 
   private async put<T>(url: string, data?: Record<string, unknown>): Promise<T> {
+    console.log(`PUT ${url}:`, data);
     const response: AxiosResponse<T> = await this.client.put(url, data);
+    console.log(`PUT ${url} response:`, response.data);
     return response.data;
   }
 
@@ -126,14 +130,6 @@ class ApiClient {
     return this.post('/admin/users', data);
   }
 
-  async updateUser(id: string, data: Partial<User>): Promise<ApiResponse<User>> {
-    return this.put(`/admin/users/${id}`, data);
-  }
-
-  async deleteUser(id: string): Promise<ApiResponse<void>> {
-    return this.delete(`/admin/users/${id}`);
-  }
-
   // License Management API
   async getLicenses(filters: FilterState): Promise<ApiResponse<PaginatedResponse<License>>> {
     return this.get('/admin/licenses', filters);
@@ -143,16 +139,12 @@ class ApiClient {
     return this.get(`/admin/licenses/${id}`);
   }
 
-  async createLicense(data: Partial<License>): Promise<ApiResponse<License>> {
+  async createLicense(data: { userId: string; type: number; expiresAt?: string }): Promise<ApiResponse<License>> {
     return this.post('/admin/licenses', data);
   }
 
   async updateLicense(id: string, data: Partial<License>): Promise<ApiResponse<License>> {
     return this.put(`/admin/licenses/${id}`, data);
-  }
-
-  async createLicense(data: { userId: string; type: number; expiresAt?: string }): Promise<ApiResponse<License>> {
-    return this.post('/admin/licenses', data);
   }
 
   async revokeLicense(id: string): Promise<ApiResponse<void>> {
@@ -202,20 +194,20 @@ class ApiClient {
     return this.post('/admin/notifications/broadcast', { message, type });
   }
 
-  async getNotifications(): Promise<ApiResponse<PaginatedResponse<Notification>>> {
-    return this.get('/api/notifications/me');
+  async getNotifications(): Promise<ApiResponse<Notification[]>> {
+    return this.get('/notifications/me');
   }
 
   async markNotificationAsRead(id: string): Promise<ApiResponse<void>> {
-    return this.post(`/api/notifications/${id}/read`);
+    return this.post(`/notifications/${id}/read`);
   }
 
   // Settings API
-  async getAdminSettings(): Promise<ApiResponse<AdminSettings>> {
+  async getAdminSettings(): Promise<ApiResponse<any>> {
     return this.get('/admin/settings');
   }
 
-  async updateAdminSettings(settings: AdminSettings): Promise<ApiResponse<AdminSettings>> {
+  async updateAdminSettings(settings: any): Promise<ApiResponse<any>> {
     return this.put('/admin/settings', settings);
   }
 
@@ -230,15 +222,6 @@ class ApiClient {
 
   async getHealthCheck(): Promise<ApiResponse<SystemStatus>> {
     return this.get('/admin/system/health');
-  }
-
-  // Notification API
-  async sendNotification(userIds: string[], message: string, type: string): Promise<ApiResponse<void>> {
-    return this.post('/admin/notifications/send', { userIds, message, type });
-  }
-
-  async broadcastNotification(message: string, type: string): Promise<ApiResponse<void>> {
-    return this.post('/admin/notifications/broadcast', { message, type });
   }
 }
 
@@ -298,5 +281,5 @@ export const notificationAPI = {
 
 export const settingsAPI = {
   getAdminSettings: () => apiClient.getAdminSettings(),
-  updateAdminSettings: (settings: AdminSettings) => apiClient.updateAdminSettings(settings),
+  updateAdminSettings: (settings: any) => apiClient.updateAdminSettings(settings),
 };

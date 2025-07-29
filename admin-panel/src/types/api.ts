@@ -18,6 +18,8 @@ export interface PaginatedResponse<T> {
 export interface FilterState {
   search?: string;
   status?: string;
+  type?: string;
+  isActive?: boolean;
   dateRange?: {
     start: string;
     end: string;

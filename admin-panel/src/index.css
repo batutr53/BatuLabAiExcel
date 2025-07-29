@@ -42,6 +42,11 @@ body {
 /* Form styles */
 input, textarea, select {
   @apply focus:ring-2 focus:ring-primary-500 focus:border-primary-500;
+  color: #1f2937 !important; /* Force text color to gray-800 */
+}
+
+input::placeholder, textarea::placeholder {
+  color: #6b7280 !important; /* Force placeholder color to gray-500 */
 }
 
 /* Button hover effects */

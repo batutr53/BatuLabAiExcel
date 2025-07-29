@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using BatuLabAiExcel.WebApi.Data;
 using BatuLabAiExcel.WebApi.Models;
 using BatuLabAiExcel.WebApi.Models.Entities;
+using BatuLabAiExcel.WebApi.Services;
 
 namespace BatuLabAiExcel.WebApi.Controllers;
 
@@ -329,28 +330,6 @@ public class AdminController : ControllerBase
     }
 
     /// <summary>
-    /// Refund a payment
-    /// </summary>
-    [HttpPost("payments/{id}/refund")]
-    public async Task<ActionResult<ApiResponse<object>>> RefundPayment(Guid id, [FromBody] string? reason = null)
-    {
-        try
-        {
-            var result = await _paymentService.RefundPaymentAsync(id, reason ?? "Admin initiated refund");
-            if (!result.IsSuccess)
-            {
-                return BadRequest(ApiResponse<object>.ErrorResult(result.Error ?? "Failed to refund payment"));
-            }
-            return Ok(ApiResponse<object>.SuccessResult(new { }, "Payment refunded successfully"));
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error refunding payment {PaymentId}", id);
-            return StatusCode(500, ApiResponse<object>.ErrorResult("Failed to refund payment"));
-        }
-    }
-
-    /// <summary>
     /// Get revenue analytics
     /// </summary>
     [HttpGet("analytics/revenue")]
@@ -367,8 +346,14 @@ public class AdminController : ControllerBase
                 _ => now.AddMonths(-1)
             };
 
-            var payments = await _context.Payments
+            // Get all payments in memory first to avoid SQLite Date issues
+            var allPayments = await _context.Payments
                 .Where(p => p.Status == PaymentStatus.Succeeded && p.CreatedAt >= startDate)
+                .Select(p => new { p.CreatedAt, p.Amount })
+                .ToListAsync();
+
+            // Group by date in memory
+            var payments = allPayments
                 .GroupBy(p => p.CreatedAt.Date)
                 .Select(g => new
                 {
@@ -376,7 +361,7 @@ public class AdminController : ControllerBase
                     value = g.Sum(p => p.Amount)
                 })
                 .OrderBy(x => x.date)
-                .ToListAsync();
+                .ToList();
 
             // Fill missing dates with 0 values
             var data = new List<object>();
@@ -418,8 +403,14 @@ public class AdminController : ControllerBase
                 _ => now.AddMonths(-1)
             };
 
-            var users = await _context.Users
+            // Get all users in memory first to avoid SQLite Date issues
+            var allUsers = await _context.Users
                 .Where(u => u.CreatedAt >= startDate)
+                .Select(u => new { u.CreatedAt })
+                .ToListAsync();
+
+            // Group by date in memory
+            var users = allUsers
                 .GroupBy(u => u.CreatedAt.Date)
                 .Select(g => new
                 {
@@ -427,7 +418,7 @@ public class AdminController : ControllerBase
                     value = g.Count()
                 })
                 .OrderBy(x => x.date)
-                .ToListAsync();
+                .ToList();
 
             // Fill missing dates with 0 values
             var data = new List<object>();
@@ -460,15 +451,24 @@ public class AdminController : ControllerBase
     {
         try
         {
-            var distribution = await _context.Licenses
+            // Get all licenses and calculate in memory to avoid SQLite issues
+            var allLicenses = await _context.Licenses.ToListAsync();
+            var totalCount = allLicenses.Count;
+
+            if (totalCount == 0)
+            {
+                return Ok(ApiResponse<object>.SuccessResult(new List<object>()));
+            }
+
+            var distribution = allLicenses
                 .GroupBy(l => l.Type)
                 .Select(g => new
                 {
                     type = g.Key.ToString(),
                     count = g.Count(),
-                    percentage = Math.Round((double)g.Count() * 100 / _context.Licenses.Count(), 2)
+                    percentage = Math.Round((double)g.Count() * 100 / totalCount, 2)
                 })
-                .ToListAsync();
+                .ToList();
 
             return Ok(ApiResponse<object>.SuccessResult(distribution));
         }
@@ -526,7 +526,9 @@ public class AdminController : ControllerBase
     {
         try
         {
+            _logger.LogInformation("Getting admin settings request received");
             var settings = await _adminSettingsService.GetSettingsAsync();
+            _logger.LogInformation("Admin settings retrieved: {@Settings}", settings);
             return Ok(settings);
         }
         catch (Exception ex)
@@ -544,7 +546,9 @@ public class AdminController : ControllerBase
     {
         try
         {
+            _logger.LogInformation("Received settings update request: {@Settings}", request);
             var result = await _adminSettingsService.UpdateSettingsAsync(request);
+            _logger.LogInformation("Settings update result: {@Result}", result);
             return Ok(result);
         }
         catch (Exception ex)

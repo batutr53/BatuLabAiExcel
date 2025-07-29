@@ -10,6 +10,8 @@ export interface DashboardStats {
   activeLicenses: number;
   revenueGrowth: number;
   userGrowth: number;
+  recentSignups: User[];
+  recentPayments: Payment[];
 }
 
 // System Status (Backend format)

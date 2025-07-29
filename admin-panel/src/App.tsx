@@ -9,8 +9,13 @@ import { LoginPage } from './components/auth/LoginPage';
 import { DashboardLayout } from './components/layout/DashboardLayout';
 import { DashboardPage } from './components/dashboard/DashboardPage';
 import { UsersPage } from './components/users/UsersPage';
+import { UserFormPage } from './components/users/UserFormPage';
 import { LicensesPage } from './components/licenses/LicensesPage';
+import { LicenseFormPage } from './components/licenses/LicenseFormPage';
 import { PaymentsPage } from './components/payments/PaymentsPage';
+import { AnalyticsPage } from './components/analytics/AnalyticsPage';
+import { NotificationsPage } from './components/notifications/NotificationsPage';
+import { SendNotificationPage } from './components/notifications/SendNotificationPage';
 import { SettingsPage } from './components/settings/SettingsPage';
 
 // Create a client
@@ -51,7 +56,7 @@ function App() {
                 <Route path="payments" element={<PaymentsPage />} />
                 
                 {/* Analytics */}
-                <Route path="analytics" element={<div className="p-6"><h1 className="text-2xl font-bold">Analitik</h1><p className="text-gray-600 mt-2">Bu sayfa geliştirilme aşamasında...</p></div>} />
+                <Route path="analytics" element={<AnalyticsPage />} />
                 
                 {/* Notifications */}
                 <Route path="notifications" element={<NotificationsPage />} />

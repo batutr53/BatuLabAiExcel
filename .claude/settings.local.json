@@ -73,7 +73,10 @@
       "Bash(npm run lint)",
       "Bash(npm uninstall:*)",
       "Bash(tasklist:*)",
-      "Bash(cmd //c:*)"
+      "Bash(cmd //c:*)",
+      "Bash(where dotnet)",
+      "Bash(\"C:\\Program Files\\dotnet\\dotnet.exe\" ef migrations add UpdateModels --project \"D:\\excelaioffice\\src\\BatuLabAiExcel.WebApi\")",
+      "Bash(del officeai.db*)"
     ],
     "deny": []
   }

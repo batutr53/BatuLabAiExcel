@@ -1,4 +1,8 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import toast from 'react-hot-toast';
+import { settingsAPI } from '../../services/api';
+import type { AdminSettings } from '../../types';
 import { 
   CogIcon,
   UserIcon,
@@ -62,21 +66,76 @@ const settingSections: SettingSection[] = [
 
 export function SettingsPage() {
   const [activeSection, setActiveSection] = useState('general');
-  const [isSaving, setIsSaving] = useState(false);
-  const [savedSection, setSavedSection] = useState<string | null>(null);
+  const [settings, setSettings] = useState<AdminSettings | null>(null);
+  const queryClient = useQueryClient();
 
-  const handleSave = async (sectionId: string) => {
-    setIsSaving(true);
-    
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    setIsSaving(false);
-    setSavedSection(sectionId);
-    
-    // Clear saved indicator after 3 seconds
-    setTimeout(() => setSavedSection(null), 3000);
+  const { data: settingsData, isLoading } = useQuery({
+    queryKey: ['admin-settings'],
+    queryFn: () => {
+      console.log('Fetching settings from API...');
+      return settingsAPI.getAdminSettings();
+    },
+    staleTime: 0, // Always fetch fresh data
+    gcTime: 0, // Don't cache
+  });
+
+  const updateSettingsMutation = useMutation({
+    mutationFn: (updatedSettings: AdminSettings) => {
+      console.log('Sending settings to API:', updatedSettings);
+      return settingsAPI.updateAdminSettings(updatedSettings);
+    },
+    onSuccess: async (response) => {
+      console.log('Settings update successful:', response);
+      
+      // Update local state immediately with response data
+      if (response?.data) {
+        console.log('Updating local state with:', response.data);
+        setSettings(response.data);
+      }
+      
+      // Force refetch fresh data
+      await queryClient.invalidateQueries({ queryKey: ['admin-settings'] });
+      await queryClient.refetchQueries({ queryKey: ['admin-settings'] });
+      toast.success('Ayarlar başarıyla güncellendi!');
+    },
+    onError: (error: any) => {
+      console.error('Settings update error:', error);
+      toast.error('Ayarlar güncellenirken hata oluştu: ' + (error.message || 'Bilinmeyen hata'));
+    }
+  });
+
+  useEffect(() => {
+    if (settingsData?.data) {
+      console.log('useEffect: Updating settings from API response:', settingsData.data);
+      setSettings(settingsData.data);
+    }
+  }, [settingsData]);
+
+  const handleSave = async () => {
+    if (!settings) return;
+    console.log('Saving settings:', settings);
+    updateSettingsMutation.mutate(settings);
   };
+
+  const updateSetting = (section: keyof AdminSettings, key: string, value: any) => {
+    if (!settings) return;
+    setSettings({
+      ...settings,
+      [section]: {
+        ...settings[section],
+        [key]: value
+      }
+    });
+  };
+
+  if (isLoading || !settings) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
+        <span className="ml-2 text-gray-600">Ayarlar yükleniyor...</span>
+      </div>
+    );
+  }
 
   const renderGeneralSettings = () => (
     <div className="space-y-6">
@@ -89,7 +148,8 @@ export function SettingsPage() {
             </label>
             <input
               type="text"
-              defaultValue="Office AI - Batu Lab"
+              value={settings?.general.appName || ''}
+              onChange={(e) => updateSetting('general', 'appName', e.target.value)}
               className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
             />
           </div>
@@ -99,7 +159,8 @@ export function SettingsPage() {
             </label>
             <input
               type="text"
-              defaultValue="1.0.0"
+              value={settings?.general.version || ''}
+              onChange={(e) => updateSetting('general', 'version', e.target.value)}
               className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
             />
           </div>
@@ -107,7 +168,11 @@ export function SettingsPage() {
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Zaman Dilimi
             </label>
-            <select className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary-500 focus:border-primary-500">
+            <select 
+              value={settings?.general.timeZone || 'Europe/Istanbul'}
+              onChange={(e) => updateSetting('general', 'timeZone', e.target.value)}
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+            >
               <option value="Europe/Istanbul">Europe/Istanbul (GMT+3)</option>
               <option value="UTC">UTC (GMT+0)</option>
               <option value="America/New_York">America/New_York (GMT-5)</option>
@@ -117,7 +182,11 @@ export function SettingsPage() {
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Dil
             </label>
-            <select className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary-500 focus:border-primary-500">
+            <select 
+              value={settings?.general.language || 'tr'}
+              onChange={(e) => updateSetting('general', 'language', e.target.value)}
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+            >
               <option value="tr">Türkçe</option>
               <option value="en">English</option>
             </select>
@@ -131,6 +200,8 @@ export function SettingsPage() {
           <input
             type="checkbox"
             id="maintenance"
+            checked={settings?.general.maintenanceMode || false}
+            onChange={(e) => updateSetting('general', 'maintenanceMode', e.target.checked)}
             className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
           />
           <label htmlFor="maintenance" className="text-sm text-gray-700">
@@ -150,7 +221,8 @@ export function SettingsPage() {
             <input
               type="checkbox"
               id="allowRegistration"
-              defaultChecked
+              checked={settings?.users.allowRegistration || false}
+              onChange={(e) => updateSetting('users', 'allowRegistration', e.target.checked)}
               className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
             />
             <label htmlFor="allowRegistration" className="text-sm text-gray-700">
@@ -161,6 +233,8 @@ export function SettingsPage() {
             <input
               type="checkbox"
               id="emailVerification"
+              checked={settings?.users.emailVerificationRequired || false}
+              onChange={(e) => updateSetting('users', 'emailVerificationRequired', e.target.checked)}
               className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
             />
             <label htmlFor="emailVerification" className="text-sm text-gray-700">
@@ -171,7 +245,8 @@ export function SettingsPage() {
             <input
               type="checkbox"
               id="autoTrialLicense"
-              defaultChecked
+              checked={settings?.users.autoTrialLicense || false}
+              onChange={(e) => updateSetting('users', 'autoTrialLicense', e.target.checked)}
               className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
             />
             <label htmlFor="autoTrialLicense" className="text-sm text-gray-700">
@@ -190,7 +265,8 @@ export function SettingsPage() {
             </label>
             <input
               type="number"
-              defaultValue="6"
+              value={settings?.users.minimumPasswordLength || 6}
+              onChange={(e) => updateSetting('users', 'minimumPasswordLength', parseInt(e.target.value))}
               min="4"
               max="20"
               className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
@@ -202,7 +278,8 @@ export function SettingsPage() {
             </label>
             <input
               type="number"
-              defaultValue="5"
+              value={settings?.users.maxLoginAttempts || 5}
+              onChange={(e) => updateSetting('users', 'maxLoginAttempts', parseInt(e.target.value))}
               min="3"
               max="10"
               className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
@@ -224,7 +301,8 @@ export function SettingsPage() {
             </label>
             <input
               type="number"
-              defaultValue="24"
+              value={settings?.security.tokenExpiryHours || 24}
+              onChange={(e) => updateSetting('security', 'tokenExpiryHours', parseInt(e.target.value))}
               min="1"
               max="168"
               className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
@@ -236,7 +314,8 @@ export function SettingsPage() {
             </label>
             <input
               type="number"
-              defaultValue="30"
+              value={settings?.security.refreshTokenDurationDays || 30}
+              onChange={(e) => updateSetting('security', 'refreshTokenDurationDays', parseInt(e.target.value))}
               min="1"
               max="90"
               className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
@@ -252,7 +331,8 @@ export function SettingsPage() {
             <input
               type="checkbox"
               id="enableRateLimit"
-              defaultChecked
+              checked={settings?.security.enableRateLimiting || false}
+              onChange={(e) => updateSetting('security', 'enableRateLimiting', e.target.checked)}
               className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
             />
             <label htmlFor="enableRateLimit" className="text-sm text-gray-700">
@@ -266,7 +346,8 @@ export function SettingsPage() {
               </label>
               <input
                 type="number"
-                defaultValue="100"
+                value={settings?.security.generalRateLimit || 100}
+                onChange={(e) => updateSetting('security', 'generalRateLimit', parseInt(e.target.value))}
                 className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
               />
             </div>
@@ -276,7 +357,8 @@ export function SettingsPage() {
               </label>
               <input
                 type="number"
-                defaultValue="10"
+                value={settings?.security.authRateLimit || 10}
+                onChange={(e) => updateSetting('security', 'authRateLimit', parseInt(e.target.value))}
                 className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
               />
             </div>
@@ -286,7 +368,8 @@ export function SettingsPage() {
               </label>
               <input
                 type="number"
-                defaultValue="5"
+                value={settings?.security.paymentRateLimit || 5}
+                onChange={(e) => updateSetting('security', 'paymentRateLimit', parseInt(e.target.value))}
                 className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
               />
             </div>
@@ -296,81 +379,138 @@ export function SettingsPage() {
     </div>
   );
 
-  const renderNotificationSettings = () => (
-    <div className="space-y-6">
-      <div>
-        <h3 className="text-lg font-medium text-gray-900 mb-4">E-posta Ayarları</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              SMTP Host
-            </label>
-            <input
-              type="text"
-              defaultValue="smtp.gmail.com"
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              SMTP Port
-            </label>
-            <input
-              type="number"
-              defaultValue="587"
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Gönderen E-posta
-            </label>
-            <input
-              type="email"
-              defaultValue="noreply@batulab.com"
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Gönderen Adı
-            </label>
-            <input
-              type="text"
-              defaultValue="Office AI - Batu Lab"
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-            />
-          </div>
-        </div>
-      </div>
+  const renderNotificationSettings = () => {
+    const notificationTypes = [
+      { key: 'NewUser', label: 'Yeni kullanıcı kaydı' },
+      { key: 'PaymentSuccess', label: 'Ödeme tamamlandı' },
+      { key: 'PaymentFailed', label: 'Ödeme başarısız' },
+      { key: 'LicenseExpired', label: 'Lisans süresi bitti' },
+      { key: 'SystemError', label: 'Sistem hataları' },
+      { key: 'SecurityAlert', label: 'Güvenlik uyarıları' }
+    ];
 
-      <div>
-        <h3 className="text-lg font-medium text-gray-900 mb-4">Bildirim Türleri</h3>
-        <div className="space-y-3">
-          {[
-            'Yeni kullanıcı kaydı',
-            'Ödeme tamamlandı',
-            'Ödeme başarısız',
-            'Lisans süresi bitti',
-            'Sistem hataları',
-            'Güvenlik uyarıları'
-          ].map((notification) => (
-            <div key={notification} className="flex items-center space-x-3">
+    return (
+      <div className="space-y-6">
+        <div>
+          <h3 className="text-lg font-medium text-gray-900 mb-4">E-posta Ayarları</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                SMTP Host
+              </label>
+              <input
+                type="text"
+                value={settings?.notifications.smtpHost || ''}
+                onChange={(e) => updateSetting('notifications', 'smtpHost', e.target.value)}
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                SMTP Port
+              </label>
+              <input
+                type="number"
+                value={settings?.notifications.smtpPort || 587}
+                onChange={(e) => updateSetting('notifications', 'smtpPort', parseInt(e.target.value))}
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Gönderen E-posta
+              </label>
+              <input
+                type="email"
+                value={settings?.notifications.fromEmail || ''}
+                onChange={(e) => updateSetting('notifications', 'fromEmail', e.target.value)}
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Gönderen Adı
+              </label>
+              <input
+                type="text"
+                value={settings?.notifications.fromName || ''}
+                onChange={(e) => updateSetting('notifications', 'fromName', e.target.value)}
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                SMTP Kullanıcı Adı
+              </label>
+              <input
+                type="text"
+                value={settings?.notifications.smtpUsername || ''}
+                onChange={(e) => updateSetting('notifications', 'smtpUsername', e.target.value)}
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                SMTP Şifresi
+              </label>
+              <input
+                type="password"
+                value={settings?.notifications.smtpPassword || ''}
+                onChange={(e) => updateSetting('notifications', 'smtpPassword', e.target.value)}
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+              />
+            </div>
+          </div>
+          <div className="mt-4">
+            <div className="flex items-center space-x-3">
               <input
                 type="checkbox"
-                id={notification}
-                defaultChecked
+                id="enableSsl"
+                checked={settings?.notifications.enableSsl || false}
+                onChange={(e) => updateSetting('notifications', 'enableSsl', e.target.checked)}
                 className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
               />
-              <label htmlFor={notification} className="text-sm text-gray-700">
-                {notification}
+              <label htmlFor="enableSsl" className="text-sm text-gray-700">
+                SSL/TLS etkinleştir
               </label>
             </div>
-          ))}
+          </div>
+        </div>
+
+        <div>
+          <h3 className="text-lg font-medium text-gray-900 mb-4">Bildirim Türleri</h3>
+          <div className="space-y-3">
+            {notificationTypes.map((notificationType) => {
+              const isEnabled = settings?.notifications.enabledNotificationTypes?.includes(notificationType.key) || false;
+              return (
+                <div key={notificationType.key} className="flex items-center space-x-3">
+                  <input
+                    type="checkbox"
+                    id={notificationType.key}
+                    checked={isEnabled}
+                    onChange={(e) => {
+                      const currentTypes = settings?.notifications.enabledNotificationTypes || [];
+                      let newTypes;
+                      if (e.target.checked) {
+                        newTypes = [...currentTypes, notificationType.key];
+                      } else {
+                        newTypes = currentTypes.filter(type => type !== notificationType.key);
+                      }
+                      updateSetting('notifications', 'enabledNotificationTypes', newTypes);
+                    }}
+                    className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
+                  />
+                  <label htmlFor={notificationType.key} className="text-sm text-gray-700">
+                    {notificationType.label}
+                  </label>
+                </div>
+              );
+            })}
+          </div>
         </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   const renderPaymentSettings = () => (
     <div className="space-y-6">
@@ -383,7 +523,8 @@ export function SettingsPage() {
             </label>
             <input
               type="text"
-              defaultValue="pk_test_..."
+              value={settings?.payment.stripePublishableKey || ''}
+              onChange={(e) => updateSetting('payment', 'stripePublishableKey', e.target.value)}
               className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 font-mono"
             />
           </div>
@@ -393,7 +534,8 @@ export function SettingsPage() {
             </label>
             <input
               type="password"
-              defaultValue="sk_test_..."
+              value={settings?.payment.stripeSecretKey || ''}
+              onChange={(e) => updateSetting('payment', 'stripeSecretKey', e.target.value)}
               className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 font-mono"
             />
           </div>
@@ -403,7 +545,8 @@ export function SettingsPage() {
             </label>
             <input
               type="password"
-              defaultValue="whsec_..."
+              value={settings?.payment.stripeWebhookSecret || ''}
+              onChange={(e) => updateSetting('payment', 'stripeWebhookSecret', e.target.value)}
               className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 font-mono"
             />
           </div>
@@ -419,7 +562,8 @@ export function SettingsPage() {
             </label>
             <input
               type="number"
-              defaultValue="29.99"
+              value={settings?.payment.monthlyPlanPrice || 0}
+              onChange={(e) => updateSetting('payment', 'monthlyPlanPrice', parseFloat(e.target.value))}
               step="0.01"
               className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
             />
@@ -430,7 +574,8 @@ export function SettingsPage() {
             </label>
             <input
               type="number"
-              defaultValue="299.99"
+              value={settings?.payment.yearlyPlanPrice || 0}
+              onChange={(e) => updateSetting('payment', 'yearlyPlanPrice', parseFloat(e.target.value))}
               step="0.01"
               className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
             />
@@ -441,7 +586,8 @@ export function SettingsPage() {
             </label>
             <input
               type="number"
-              defaultValue="999.99"
+              value={settings?.payment.lifetimePlanPrice || 0}
+              onChange={(e) => updateSetting('payment', 'lifetimePlanPrice', parseFloat(e.target.value))}
               step="0.01"
               className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
             />
@@ -457,7 +603,8 @@ export function SettingsPage() {
           </label>
           <input
             type="number"
-            defaultValue="1"
+            value={settings?.payment.trialDurationDays || 1}
+            onChange={(e) => updateSetting('payment', 'trialDurationDays', parseInt(e.target.value))}
             min="1"
             max="30"
             className="w-32 border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
@@ -478,7 +625,8 @@ export function SettingsPage() {
             </label>
             <input
               type="password"
-              defaultValue="sk-ant-..."
+              value={settings?.api.claudeApiKey || ''}
+              onChange={(e) => updateSetting('api', 'claudeApiKey', e.target.value)}
               className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 font-mono"
             />
           </div>
@@ -486,9 +634,14 @@ export function SettingsPage() {
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Model
             </label>
-            <select className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary-500 focus:border-primary-500">
+            <select 
+              value={settings?.api.claudeModel || 'claude-3-sonnet'}
+              onChange={(e) => updateSetting('api', 'claudeModel', e.target.value)}
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+            >
               <option value="claude-3-sonnet">Claude 3 Sonnet</option>
               <option value="claude-3-haiku">Claude 3 Haiku</option>
+              <option value="claude-3-opus">Claude 3 Opus</option>
             </select>
           </div>
         </div>
@@ -503,7 +656,8 @@ export function SettingsPage() {
             </label>
             <input
               type="password"
-              defaultValue="AIza..."
+              value={settings?.api.geminiApiKey || ''}
+              onChange={(e) => updateSetting('api', 'geminiApiKey', e.target.value)}
               className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 font-mono"
             />
           </div>
@@ -519,7 +673,8 @@ export function SettingsPage() {
             </label>
             <input
               type="password"
-              defaultValue="gsk_..."
+              value={settings?.api.groqApiKey || ''}
+              onChange={(e) => updateSetting('api', 'groqApiKey', e.target.value)}
               className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 font-mono"
             />
           </div>
@@ -589,21 +744,13 @@ export function SettingsPage() {
 
               {/* Save Button */}
               <div className="mt-8 pt-6 border-t border-gray-200">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-2">
-                    {savedSection === activeSection && (
-                      <div className="flex items-center text-green-600">
-                        <CheckIcon className="w-4 h-4 mr-1" />
-                        <span className="text-sm">Değişiklikler kaydedildi</span>
-                      </div>
-                    )}
-                  </div>
+                <div className="flex items-center justify-end space-x-3">
                   <button
-                    onClick={() => handleSave(activeSection)}
-                    disabled={isSaving}
+                    onClick={handleSave}
+                    disabled={updateSettingsMutation.isPending}
                     className="inline-flex items-center px-4 py-2 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    {isSaving ? (
+                    {updateSettingsMutation.isPending ? (
                       <>
                         <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
                         Kaydediliyor...

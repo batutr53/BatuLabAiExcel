@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import toast from 'react-hot-toast';
+import * as XLSX from 'xlsx';
 import { 
   CreditCardIcon,
   MagnifyingGlassIcon,
@@ -15,6 +17,8 @@ import {
 import { paymentAPI } from '../../services/api';
 import type { FilterState } from '../../types';
 import { clsx } from 'clsx';
+import { ConfirmModal } from '../licenses/ConfirmModal';
+import { PaymentDetailModal } from './PaymentDetailModal';
 
 interface Payment {
   id: string;
@@ -51,6 +55,11 @@ export function PaymentsPage() {
     paymentAmount?: number;
     paymentCurrency?: string;
   }>({ isOpen: false });
+  const [detailModal, setDetailModal] = useState<{
+    isOpen: boolean;
+    payment?: Payment;
+  }>({ isOpen: false });
+  const [isExporting, setIsExporting] = useState(false);
   
   const queryClient = useQueryClient();
 
@@ -94,6 +103,14 @@ export function PaymentsPage() {
       paymentId: payment.id,
       paymentAmount: payment.amount,
       paymentCurrency: payment.currency,
+    });
+    setActiveDropdown(null);
+  };
+
+  const handleViewDetails = (payment: Payment) => {
+    setDetailModal({
+      isOpen: true,
+      payment: payment,
     });
     setActiveDropdown(null);
   };
@@ -162,6 +179,133 @@ export function PaymentsPage() {
       .reduce((sum: number, p: Payment) => sum + p.amount, 0);
   };
 
+  const handleExportToExcel = async () => {
+    try {
+      setIsExporting(true);
+      
+      // Get all payments for export (not just current page)
+      const allPaymentsResponse = await paymentAPI.getPayments({ 
+        page: 1, 
+        pageSize: 9999, // Get all payments
+        search: filters.search,
+        status: filters.status 
+      });
+      
+      const allPayments = allPaymentsResponse?.data?.data || [];
+      
+      if (allPayments.length === 0) {
+        toast.error('Dışa aktarılacak ödeme bulunamadı');
+        return;
+      }
+
+      // Prepare data for Excel
+      const exportData = allPayments.map((payment: Payment, index: number) => ({
+        'Sıra No': index + 1,
+        'Ödeme ID': payment.id,
+        'Stripe Payment Intent ID': payment.stripePaymentIntentId,
+        'Müşteri Adı': payment.user.fullName,
+        'E-posta': payment.user.email,
+        'Tutar': payment.amount,
+        'Para Birimi': payment.currency.toUpperCase(),
+        'Formatlanmış Tutar': formatAmount(payment.amount, payment.currency),
+        'Lisans Tipi': LICENSE_TYPES[payment.licenseType] || 'Unknown',
+        'Durum': PAYMENT_STATUS[payment.status] || 'Unknown',
+        'Açıklama': payment.description,
+        'Ödeme Tarihi': formatDate(payment.createdAt),
+        'Ödeme Tarihi (ISO)': payment.createdAt,
+        'Müşteri ID': payment.user.id,
+        'İsim': payment.user.firstName,
+        'Soyisim': payment.user.lastName
+      }));
+
+      // Create workbook and worksheet
+      const wb = XLSX.utils.book_new();
+      const ws = XLSX.utils.json_to_sheet(exportData);
+
+      // Set column widths
+      const columnWidths = [
+        { wch: 8 },   // Sıra No
+        { wch: 40 },  // Ödeme ID
+        { wch: 35 },  // Stripe Payment Intent ID
+        { wch: 25 },  // Müşteri Adı
+        { wch: 30 },  // E-posta
+        { wch: 12 },  // Tutar
+        { wch: 8 },   // Para Birimi
+        { wch: 15 },  // Formatlanmış Tutar
+        { wch: 12 },  // Lisans Tipi
+        { wch: 12 },  // Durum
+        { wch: 40 },  // Açıklama
+        { wch: 20 },  // Ödeme Tarihi
+        { wch: 25 },  // Ödeme Tarihi (ISO)
+        { wch: 40 },  // Müşteri ID
+        { wch: 15 },  // İsim
+        { wch: 15 },  // Soyisim
+      ];
+      ws['!cols'] = columnWidths;
+
+      // Add summary sheet
+      const summaryData = [
+        { 'Özet Bilgi': 'Toplam Ödeme Sayısı', 'Değer': allPayments.length },
+        { 'Özet Bilgi': 'Başarılı Ödemeler', 'Değer': allPayments.filter((p: Payment) => p.status === 2).length },
+        { 'Özet Bilgi': 'Bekleyen Ödemeler', 'Değer': allPayments.filter((p: Payment) => p.status === 0).length },
+        { 'Özet Bilgi': 'Başarısız Ödemeler', 'Değer': allPayments.filter((p: Payment) => p.status === 3).length },
+        { 'Özet Bilgi': 'İade Edilenler', 'Değer': allPayments.filter((p: Payment) => p.status === 5).length },
+        { 'Özet Bilgi': 'Toplam Gelir (USD)', 'Değer': formatAmount(calculateTotalRevenue(), 'USD') },
+        { 'Özet Bilgi': 'Dışa Aktarım Tarihi', 'Değer': new Date().toLocaleString('tr-TR') },
+      ];
+
+      const summaryWs = XLSX.utils.json_to_sheet(summaryData);
+      summaryWs['!cols'] = [{ wch: 25 }, { wch: 30 }];
+
+      // Add worksheets to workbook
+      XLSX.utils.book_append_sheet(wb, summaryWs, 'Özet');
+      XLSX.utils.book_append_sheet(wb, ws, 'Ödemeler');
+
+      // Create status-based sheets
+      const statusSheets = [
+        { status: 2, name: 'Başarılı Ödemeler', filter: (p: Payment) => p.status === 2 },
+        { status: 0, name: 'Bekleyen Ödemeler', filter: (p: Payment) => p.status === 0 },
+        { status: 3, name: 'Başarısız Ödemeler', filter: (p: Payment) => p.status === 3 },
+        { status: 5, name: 'İade Edilenler', filter: (p: Payment) => p.status === 5 },
+      ];
+
+      statusSheets.forEach(({ name, filter }) => {
+        const filteredPayments = allPayments.filter(filter);
+        if (filteredPayments.length > 0) {
+          const statusData = filteredPayments.map((payment: Payment, index: number) => ({
+            'Sıra No': index + 1,
+            'Ödeme ID': payment.id,
+            'Müşteri': payment.user.fullName,
+            'E-posta': payment.user.email,
+            'Tutar': formatAmount(payment.amount, payment.currency),
+            'Açıklama': payment.description,
+            'Tarih': formatDate(payment.createdAt)
+          }));
+          const statusWs = XLSX.utils.json_to_sheet(statusData);
+          statusWs['!cols'] = [
+            { wch: 8 }, { wch: 40 }, { wch: 25 }, { wch: 30 }, 
+            { wch: 15 }, { wch: 40 }, { wch: 20 }
+          ];
+          XLSX.utils.book_append_sheet(wb, statusWs, name);
+        }
+      });
+
+      // Generate filename with timestamp
+      const timestamp = new Date().toISOString().split('T')[0];
+      const filename = `Odemeler_${timestamp}.xlsx`;
+
+      // Write and download file
+      XLSX.writeFile(wb, filename);
+      
+      toast.success(`${allPayments.length} ödeme başarıyla Excel'e aktarıldı!`);
+    } catch (error) {
+      console.error('Excel export error:', error);
+      toast.error('Excel dışa aktarım sırasında hata oluştu');
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   if (error) {
     return (
       <div className="p-6">
@@ -183,9 +327,22 @@ export function PaymentsPage() {
           </p>
         </div>
         <div className="mt-4 sm:mt-0 flex space-x-3">
-          <button className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-lg shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
-            <DocumentArrowDownIcon className="w-4 h-4 mr-2" />
-            Dışa Aktar
+          <button 
+            onClick={handleExportToExcel}
+            disabled={isExporting}
+            className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-lg shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {isExporting ? (
+              <>
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-700 mr-2"></div>
+                Dışa Aktarılıyor...
+              </>
+            ) : (
+              <>
+                <DocumentArrowDownIcon className="w-4 h-4 mr-2" />
+                Dışa Aktar
+              </>
+            )}
           </button>
         </div>
       </div>
@@ -402,7 +559,10 @@ export function PaymentsPage() {
                           {activeDropdown === payment.id && (
                             <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-10 border border-gray-200">
                               <div className="py-1">
-                                <button className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left">
+                                <button 
+                                  onClick={() => handleViewDetails(payment)}
+                                  className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
+                                >
                                   <DocumentArrowDownIcon className="w-4 h-4 mr-2" />
                                   Detayları Görüntüle
                                 </button>
@@ -504,6 +664,12 @@ export function PaymentsPage() {
         )}
       </div>
       {/* Modals */}
+      <PaymentDetailModal
+        isOpen={detailModal.isOpen}
+        onClose={() => setDetailModal({ isOpen: false })}
+        payment={detailModal.payment}
+      />
+      
       <ConfirmModal
         isOpen={confirmModal.isOpen}
         onClose={() => setConfirmModal({ isOpen: false })}

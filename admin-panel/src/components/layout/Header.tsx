@@ -1,5 +1,7 @@
-import { useState, Fragment } from 'react';
+import { useState, Fragment, useEffect } from 'react';
 import { Menu, Transition, Popover } from '@headlessui/react';
+import { useQuery } from '@tanstack/react-query';
+import { useNavigate } from 'react-router-dom';
 import { 
   Bars3Icon,
   BellIcon,
@@ -15,6 +17,8 @@ import {
   CommandLineIcon,
 } from '@heroicons/react/24/outline';
 import { useAuth } from '../../contexts/AuthContext';
+import { apiClient } from '../../services/api';
+import type { Notification } from '../../types';
 import toast from 'react-hot-toast';
 import { clsx } from 'clsx';
 
@@ -24,8 +28,19 @@ interface HeaderProps {
 
 export function Header({ onMenuClick }: HeaderProps) {
   const { state, logout } = useAuth();
+  const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
   const [isDarkMode, setIsDarkMode] = useState(false);
+
+  // Fetch notifications from API
+  const { data: notificationsResponse, refetch: refetchNotifications } = useQuery({
+    queryKey: ['notifications'],
+    queryFn: () => apiClient.getNotifications(),
+    refetchInterval: 30000, // Refetch every 30 seconds
+    enabled: !!state.isAuthenticated,
+  });
+
+  const notifications: Notification[] = notificationsResponse?.data || [];
 
   const handleLogout = async () => {
     try {
@@ -36,32 +51,29 @@ export function Header({ onMenuClick }: HeaderProps) {
     }
   };
 
-  const notifications = [
-    {
-      id: 1,
-      title: 'Yeni kullanıcı kaydı',
-      message: '5 yeni kullanıcı sisteme kayıt oldu',
-      time: '2 dakika önce',
-      type: 'info',
-      unread: true,
-    },
-    {
-      id: 2,
-      title: 'Sistem güncellemesi',
-      message: 'v2.1.0 güncellemesi başarıyla tamamlandı',
-      time: '1 saat önce',
-      type: 'success',
-      unread: true,
-    },
-    {
-      id: 3,
-      title: 'Ödeme alındı',
-      message: '₺2,500 tutarında ödeme işlendi',
-      time: '3 saat önce',
-      type: 'success',
-      unread: false,
-    },
-  ];
+  const handleMarkAsRead = async (notificationId: string) => {
+    try {
+      await apiClient.markNotificationAsRead(notificationId);
+      await refetchNotifications();
+      toast.success('Bildirim okundu olarak işaretlendi');
+    } catch {
+      toast.error('Bildirim güncellenirken hata oluştu');
+    }
+  };
+
+  const formatTimeAgo = (dateString: string): string => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffInMs = now.getTime() - date.getTime();
+    const diffInMinutes = Math.floor(diffInMs / (1000 * 60));
+    const diffInHours = Math.floor(diffInMinutes / 60);
+    const diffInDays = Math.floor(diffInHours / 24);
+
+    if (diffInMinutes < 1) return 'Az önce';
+    if (diffInMinutes < 60) return `${diffInMinutes} dakika önce`;
+    if (diffInHours < 24) return `${diffInHours} saat önce`;
+    return `${diffInDays} gün önce`;
+  };
 
   const quickActions = [
     { name: 'Yeni Kullanıcı', icon: UsersIcon, href: '/users/new' },
@@ -69,7 +81,7 @@ export function Header({ onMenuClick }: HeaderProps) {
     { name: 'API Anahtarları', icon: CommandLineIcon, href: '/api/keys' },
   ];
 
-  const unreadCount = notifications.filter(n => n.unread).length;
+  const unreadCount = notifications.filter(n => !n.isRead).length;
 
   return (
     <div className="bg-white border-b border-gray-200 shadow-sm sticky top-0 z-30">
@@ -165,40 +177,58 @@ export function Header({ onMenuClick }: HeaderProps) {
                       )}
                     </div>
                     <div className="space-y-3 max-h-96 overflow-y-auto">
-                      {notifications.map((notification) => (
-                        <div
-                          key={notification.id}
-                          className={clsx(
-                            'p-3 rounded-xl border transition-all duration-200 hover:shadow-sm cursor-pointer',
-                            notification.unread
-                              ? 'bg-primary-50 border-primary-200'
-                              : 'bg-gray-50 border-gray-200'
-                          )}
-                        >
-                          <div className="flex items-start">
-                            <div className={clsx(
-                              'flex-shrink-0 w-2 h-2 rounded-full mt-2 mr-3',
-                              notification.type === 'success' ? 'bg-success-500' :
-                              notification.type === 'info' ? 'bg-primary-500' :
-                              'bg-warning-500'
-                            )} />
-                            <div className="flex-1 min-w-0">
-                              <p className="text-sm font-medium text-gray-900 truncate">
-                                {notification.title}
-                              </p>
-                              <p className="text-sm text-gray-600 mt-1">
-                                {notification.message}
-                              </p>
-                              <p className="text-xs text-gray-500 mt-2">
-                                {notification.time}
-                              </p>
+                      {notifications.length === 0 ? (
+                        <div className="text-center py-8 text-gray-500">
+                          <BellIcon className="w-12 h-12 mx-auto mb-3 opacity-50" />
+                          <p className="text-sm">Henüz bildirim yok</p>
+                        </div>
+                      ) : (
+                        notifications.map((notification) => (
+                          <div
+                            key={notification.id}
+                            className={clsx(
+                              'p-3 rounded-xl border transition-all duration-200 hover:shadow-sm cursor-pointer group',
+                              !notification.isRead
+                                ? 'bg-primary-50 border-primary-200'
+                                : 'bg-gray-50 border-gray-200'
+                            )}
+                            onClick={() => handleMarkAsRead(notification.id)}
+                          >
+                            <div className="flex items-start">
+                              <div className={clsx(
+                                'flex-shrink-0 w-2 h-2 rounded-full mt-2 mr-3',
+                                notification.type === 'success' ? 'bg-success-500' :
+                                notification.type === 'info' ? 'bg-primary-500' :
+                                notification.type === 'warning' ? 'bg-warning-500' :
+                                notification.type === 'error' ? 'bg-danger-500' :
+                                'bg-gray-500'
+                              )} />
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center justify-between">
+                                  <p className="text-sm font-medium text-gray-900 truncate">
+                                    {notification.title}
+                                  </p>
+                                  {!notification.isRead && (
+                                    <span className="ml-2 w-2 h-2 bg-primary-500 rounded-full animate-pulse" />
+                                  )}
+                                </div>
+                                <p className="text-sm text-gray-600 mt-1">
+                                  {notification.message}
+                                </p>
+                                <p className="text-xs text-gray-500 mt-2">
+                                  {formatTimeAgo(notification.createdAt)}
+                                </p>
+                              </div>
                             </div>
                           </div>
-                        </div>
-                      ))}
+                        ))
+                      )}
                     </div>
                     <div className="mt-4 pt-3 border-t border-gray-200">
-                      <button className="w-full text-sm text-primary-600 hover:text-primary-700 font-medium">
+                      <button 
+                        onClick={() => navigate('/notifications')}
+                        className="w-full text-sm text-primary-600 hover:text-primary-700 font-medium transition-colors"
+                      >
                         Tüm bildirimleri görüntüle
                       </button>
                     </div>
