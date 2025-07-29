@@ -4,6 +4,8 @@ using System.Diagnostics;
 using System.Text;
 using System.Text.Json;
 using System.IO;
+using System.IO.Compression;
+using System.Net.Http;
 using BatuLabAiExcel.Models;
 using BatuLabAiExcel.Infrastructure;
 
@@ -495,6 +497,7 @@ public class McpClient : IMcpClient
         var candidates = new[]
         {
             _settings.PythonPath, // User configured path
+            Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "python", "python.exe"), // Embedded Python
             "python",            // Default
             "python3",           // Linux/Mac style
             "py",                // Windows Python Launcher
@@ -553,8 +556,132 @@ public class McpClient : IMcpClient
             }
         }
 
-        _logger.LogWarning("No Python executable found, falling back to 'python'");
+        _logger.LogWarning("No Python executable found, attempting automatic installation");
+        
+        // Try to auto-install embedded Python if enabled
+        if (_settings.AutoInstall)
+        {
+            var autoInstallResult = await TryAutoInstallPythonAsync().ConfigureAwait(false);
+            if (autoInstallResult.IsSuccess)
+            {
+                return autoInstallResult.Value!;
+            }
+        }
+        
+        _logger.LogError("No Python executable found and auto-install failed");
         return "python"; // Fallback
+    }
+
+    /// <summary>
+    /// Try to automatically install embedded Python
+    /// </summary>
+    private async Task<Result<string>> TryAutoInstallPythonAsync()
+    {
+        try
+        {
+            _logger.LogInformation("Attempting to install embedded Python");
+            
+            var pythonDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "python");
+            var pythonExe = Path.Combine(pythonDir, "python.exe");
+            
+            // Check if already installed
+            if (File.Exists(pythonExe))
+            {
+                _logger.LogInformation("Embedded Python already exists at: {Path}", pythonExe);
+                return Result<string>.Success(pythonExe);
+            }
+            
+            // Create python directory
+            Directory.CreateDirectory(pythonDir);
+            
+            // Download embedded Python
+            var pythonUrl = "https://www.python.org/ftp/python/3.11.9/python-3.11.9-embed-amd64.zip";
+            var zipPath = Path.Combine(pythonDir, "python.zip");
+            
+            _logger.LogInformation("Downloading embedded Python from: {Url}", pythonUrl);
+            
+            using var httpClient = new HttpClient();
+            httpClient.Timeout = TimeSpan.FromMinutes(5);
+            
+            var response = await httpClient.GetAsync(pythonUrl).ConfigureAwait(false);
+            response.EnsureSuccessStatusCode();
+            
+            await using var fileStream = File.Create(zipPath);
+            await response.Content.CopyToAsync(fileStream).ConfigureAwait(false);
+            
+            _logger.LogInformation("Extracting Python to: {Directory}", pythonDir);
+            
+            // Extract ZIP
+            System.IO.Compression.ZipFile.ExtractToDirectory(zipPath, pythonDir);
+            
+            // Clean up ZIP file
+            File.Delete(zipPath);
+            
+            // Install pip
+            await InstallPipInEmbeddedPython(pythonDir).ConfigureAwait(false);
+            
+            if (File.Exists(pythonExe))
+            {
+                _logger.LogInformation("Embedded Python installed successfully: {Path}", pythonExe);
+                return Result<string>.Success(pythonExe);
+            }
+            else
+            {
+                _logger.LogError("Python installation completed but executable not found");
+                return Result<string>.Failure("Python installation failed: executable not found");
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to install embedded Python");
+            return Result<string>.Failure($"Python auto-installation failed: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// Install pip in embedded Python
+    /// </summary>
+    private async Task InstallPipInEmbeddedPython(string pythonDir)
+    {
+        try
+        {
+            var pythonExe = Path.Combine(pythonDir, "python.exe");
+            var getpipUrl = "https://bootstrap.pypa.io/get-pip.py";
+            var getpipPath = Path.Combine(pythonDir, "get-pip.py");
+            
+            // Download get-pip.py
+            using var httpClient = new HttpClient();
+            var pipScript = await httpClient.GetStringAsync(getpipUrl).ConfigureAwait(false);
+            await File.WriteAllTextAsync(getpipPath, pipScript).ConfigureAwait(false);
+            
+            // Run get-pip.py
+            var pipProcess = new Process
+            {
+                StartInfo = new ProcessStartInfo
+                {
+                    FileName = pythonExe,
+                    Arguments = $"\"{getpipPath}\"",
+                    UseShellExecute = false,
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true,
+                    CreateNoWindow = true,
+                    WorkingDirectory = pythonDir
+                }
+            };
+            
+            pipProcess.Start();
+            await pipProcess.WaitForExitAsync().ConfigureAwait(false);
+            
+            // Clean up
+            if (File.Exists(getpipPath))
+                File.Delete(getpipPath);
+                
+            _logger.LogInformation("pip installation completed with exit code: {ExitCode}", pipProcess.ExitCode);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to install pip in embedded Python");
+        }
     }
 
     private async Task<Result> PerformHandshakeAsync(CancellationToken cancellationToken)
