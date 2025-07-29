@@ -1,0 +1,54 @@
+{
+  "general": {
+    "appName": "Office AI - Batu Labs",
+    "version": "1.0.0",
+    "timeZone": "Europe/Istanbul",
+    "language": "tr",
+    "maintenanceMode": false
+  },
+  "users": {
+    "allowRegistration": true,
+    "emailVerificationRequired": false,
+    "autoTrialLicense": true,
+    "minimumPasswordLength": 6,
+    "maxLoginAttempts": 5
+  },
+  "security": {
+    "tokenExpiryHours": 24,
+    "refreshTokenDurationDays": 30,
+    "enableRateLimiting": false,
+    "generalRateLimit": 100,
+    "authRateLimit": 10,
+    "paymentRateLimit": 5
+  },
+  "notifications": {
+    "smtpHost": "smtp.gmail.com",
+    "smtpPort": 587,
+    "smtpUsername": "CHANGE_THIS_IN_PRODUCTION",
+    "smtpPassword": "CHANGE_THIS_IN_PRODUCTION",
+    "fromEmail": "noreply@batulab.com",
+    "fromName": "Office AI - Batu Lab",
+    "enableSsl": true,
+    "enabledNotificationTypes": [
+      "NewUser",
+      "PaymentSuccess",
+      "PaymentFailed",
+      "LicenseExpired"
+    ]
+  },
+  "payment": {
+    "stripePublishableKey": "pk_test_CHANGE_THIS_IN_PRODUCTION",
+    "stripeSecretKey": "sk_test_CHANGE_THIS_IN_PRODUCTION",
+    "stripeWebhookSecret": "whsec_CHANGE_THIS_IN_PRODUCTION",
+    "monthlyPlanPrice": 29.99,
+    "yearlyPlanPrice": 299.99,
+    "lifetimePlanPrice": 999.99,
+    "trialDurationDays": 1
+  },
+  "api": {
+    "claudeApiKey": "sk-ant-...",
+    "claudeModel": "claude-3-sonnet",
+    "geminiApiKey": "AIza...",
+    "groqApiKey": "gsk_..."
+  }
+}

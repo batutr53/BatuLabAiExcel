@@ -275,7 +275,7 @@ Set `ASPNETCORE_ENVIRONMENT=Development` for:
 
 ### Repository Layout
 ```
-D:\excelaioffice\
+E:\batulabaiexcel\
 ├── admin-panel\              # React TypeScript admin dashboard
 │   ├── src\components\       # React components organized by feature
 │   ├── src\services\         # API client and utilities
@@ -367,3 +367,9 @@ The admin panel is a separate React application that communicates with the WebAp
 - Health check scripts verify MCP server and Python environment
 - WebApi includes request/response logging middleware
 - Admin panel provides real-time system status and error monitoring
+
+# important-instruction-reminders
+Do what has been asked; nothing more, nothing less.
+NEVER create files unless they're absolutely necessary for achieving your goal.
+ALWAYS prefer editing an existing file to creating a new one.
+NEVER proactively create documentation files (*.md) or README files. Only create documentation files if explicitly requested by the User.
