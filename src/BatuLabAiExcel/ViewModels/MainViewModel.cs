@@ -23,6 +23,7 @@ public partial class MainViewModel : ViewModelBase
     private readonly IChatOrchestrator _chatOrchestrator;
     private readonly IAuthenticationService _authService;
     private readonly ILicenseService _licenseService;
+    private readonly IExcelProcessManager _excelProcessManager;
     private readonly ILogger<MainViewModel> _logger;
     private CancellationTokenSource? _currentOperationCts;
 
@@ -62,17 +63,25 @@ public partial class MainViewModel : ViewModelBase
     [ObservableProperty]
     private bool _isLargeDataOperation = false;
 
+    [ObservableProperty]
+    private ObservableCollection<ProgressMessage> _progressMessages = new();
+
+    [ObservableProperty]
+    private bool _hasProgressMessages = false;
+
     public event Action? RequestScrollToBottom;
 
     public MainViewModel(
         IChatOrchestrator chatOrchestrator, 
         IAuthenticationService authService,
         ILicenseService licenseService,
+        IExcelProcessManager excelProcessManager,
         ILogger<MainViewModel> logger)
     {
         _chatOrchestrator = chatOrchestrator;
         _authService = authService;
         _licenseService = licenseService;
+        _excelProcessManager = excelProcessManager;
         _logger = logger;
 
         // Subscribe to authentication changes
@@ -278,6 +287,27 @@ public partial class MainViewModel : ViewModelBase
         try
         {
             _logger.LogInformation("Processing user message: {Message}", userMessage);
+            
+            // Clear previous progress messages and start new tracking
+            ClearProgressMessages();
+            AddProgressMessage($"Starting AI operation: {userMessage}", ProgressMessageType.AI);
+
+            // Prepare Excel file if selected
+            if (!string.IsNullOrEmpty(CurrentFilePath))
+            {
+                var prepareResult = await PrepareExcelFileAsync(CurrentFilePath, _currentOperationCts.Token);
+                if (!prepareResult.IsSuccess)
+                {
+                    await System.Windows.Application.Current.Dispatcher.InvokeAsync(() =>
+                    {
+                        var errorMessage = ChatMessage.CreateSystemMessage(
+                            $"❌ Excel file preparation failed: {prepareResult.Error}");
+                        Messages.Add(errorMessage);
+                        RequestScrollToBottom?.Invoke();
+                    });
+                    return;
+                }
+            }
 
             // Include current file information in the context with Excel protection directives
             var contextualMessage = string.IsNullOrEmpty(CurrentFilePath) 
@@ -314,6 +344,8 @@ public partial class MainViewModel : ViewModelBase
                     System.Windows.Application.Current.Dispatcher.InvokeAsync(() =>
                     {
                         ProgressText = progressMessage;
+                        // Also add to detailed progress tab
+                        AddProgressMessage(progressMessage, ProgressMessageType.Processing);
                     });
                 });
 
@@ -368,6 +400,7 @@ public partial class MainViewModel : ViewModelBase
                     var assistantMessage = ChatMessage.CreateAssistantMessage(result.Value ?? "No response received.");
                     Messages.Add(assistantMessage);
                     _logger.LogInformation("Successfully processed message");
+                    AddProgressMessage("AI operation completed successfully", ProgressMessageType.Success);
                 }
                 else
                 {
@@ -375,9 +408,18 @@ public partial class MainViewModel : ViewModelBase
                         $"❌ Error: {result.Error}\n\nPlease check your configuration and try again.");
                     Messages.Add(errorMessage);
                     _logger.LogError("Error processing message: {Error}", result.Error);
+                    AddProgressMessage($"AI operation failed: {result.Error}", ProgressMessageType.Error);
                 }
                 RequestScrollToBottom?.Invoke();
             });
+
+            // Open Excel file after processing (if there was a file selected and operation was successful)
+            if (!string.IsNullOrEmpty(CurrentFilePath) && result.IsSuccess)
+            {
+                // Wait a bit for any file operations to complete
+                await Task.Delay(1000, _currentOperationCts.Token);
+                await OpenExcelFileAfterProcessingAsync(CurrentFilePath);
+            }
         }
         catch (OperationCanceledException) when (_currentOperationCts?.Token.IsCancellationRequested == true)
         {
@@ -665,5 +707,109 @@ This application helps you work with Excel files using natural language.
         _logger.LogInformation("DetectLargeDataOperation: Message='{Message}' -> IsLarge={IsLarge}", message, isLarge);
         
         return isLarge;
+    }
+
+    /// <summary>
+    /// Add progress message to the progress tab
+    /// </summary>
+    private void AddProgressMessage(string message, ProgressMessageType type = ProgressMessageType.Info)
+    {
+        System.Windows.Application.Current.Dispatcher.InvokeAsync(() =>
+        {
+            var progressMessage = ProgressMessage.Create(message, type);
+            ProgressMessages.Add(progressMessage);
+            HasProgressMessages = ProgressMessages.Any();
+            
+            // Keep only last 100 messages to prevent memory issues
+            if (ProgressMessages.Count > 100)
+            {
+                ProgressMessages.RemoveAt(0);
+            }
+        });
+    }
+
+    /// <summary>
+    /// Clear progress messages
+    /// </summary>
+    private void ClearProgressMessages()
+    {
+        System.Windows.Application.Current.Dispatcher.InvokeAsync(() =>
+        {
+            ProgressMessages.Clear();
+            HasProgressMessages = false;
+        });
+    }
+
+    /// <summary>
+    /// Handle Excel file before processing
+    /// </summary>
+    private async Task<Result> PrepareExcelFileAsync(string filePath, CancellationToken cancellationToken)
+    {
+        try
+        {
+            AddProgressMessage("Checking Excel file status...", ProgressMessageType.Excel);
+            
+            var isOpenResult = await _excelProcessManager.IsExcelFileOpenAsync(filePath);
+            if (!isOpenResult.IsSuccess)
+            {
+                AddProgressMessage($"Warning: Could not check Excel file status: {isOpenResult.Error}", ProgressMessageType.Warning);
+                return Result.Success(); // Continue anyway
+            }
+
+            if (isOpenResult.Value)
+            {
+                AddProgressMessage("Excel file is currently open, closing it for processing...", ProgressMessageType.Excel);
+                
+                var closeResult = await _excelProcessManager.CloseExcelFileAsync(filePath);
+                if (!closeResult.IsSuccess)
+                {
+                    AddProgressMessage($"Warning: Could not close Excel file: {closeResult.Error}", ProgressMessageType.Warning);
+                    // Continue anyway, might still work
+                }
+                else
+                {
+                    AddProgressMessage("Excel file closed successfully", ProgressMessageType.Success);
+                    await Task.Delay(1000, cancellationToken); // Wait for file to be unlocked
+                }
+            }
+            else
+            {
+                AddProgressMessage("Excel file is ready for processing", ProgressMessageType.Success);
+            }
+
+            return Result.Success();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error preparing Excel file: {FilePath}", filePath);
+            AddProgressMessage($"Error preparing Excel file: {ex.Message}", ProgressMessageType.Error);
+            return Result.Failure($"Error preparing Excel file: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// Open Excel file after processing
+    /// </summary>
+    private async Task OpenExcelFileAfterProcessingAsync(string filePath)
+    {
+        try
+        {
+            AddProgressMessage("Opening Excel file to show changes...", ProgressMessageType.Excel);
+            
+            var openResult = await _excelProcessManager.OpenExcelFileAsync(filePath);
+            if (openResult.IsSuccess)
+            {
+                AddProgressMessage("Excel file opened successfully", ProgressMessageType.Success);
+            }
+            else
+            {
+                AddProgressMessage($"Could not open Excel file: {openResult.Error}", ProgressMessageType.Warning);
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error opening Excel file after processing: {FilePath}", filePath);
+            AddProgressMessage($"Error opening Excel file: {ex.Message}", ProgressMessageType.Error);
+        }
     }
 }

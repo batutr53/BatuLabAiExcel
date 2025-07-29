@@ -1,8 +1,11 @@
 <Application x:Class="BatuLabAiExcel.App"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:converters="clr-namespace:BatuLabAiExcel.Converters"
              Startup="Application_Startup">
     <Application.Resources>
+        <!-- Converters -->
+        <converters:InverseBooleanConverter x:Key="InverseBooleanConverter" />
         <Style TargetType="TextBox">
             <Setter Property="Padding" Value="8,4"/>
             <Setter Property="BorderBrush" Value="#CCCCCC"/>
