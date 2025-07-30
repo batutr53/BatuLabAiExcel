@@ -40,8 +40,6 @@ public class ChatGptDesktopService : IDesktopAutomationService
                 return Result<string>.Failure("ChatGPT Desktop app is not available or could not be launched");
             }
 
-            _logger.LogInformation("Sending message to ChatGPT Desktop: {MessageLength} characters", message.Length);
-
             if (!await SendMessageToAppAsync(message))
             {
                 return Result<string>.Failure("Failed to send message to ChatGPT Desktop");
@@ -53,7 +51,6 @@ public class ChatGptDesktopService : IDesktopAutomationService
                 return Result<string>.Failure("No response received from ChatGPT Desktop or response timeout");
             }
 
-            _logger.LogInformation("Received response from ChatGPT Desktop: {ResponseLength} characters", response.Length);
             return Result<string>.Success(response);
         }
         catch (OperationCanceledException)

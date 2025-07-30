@@ -519,7 +519,8 @@ public partial class MainViewModel : ViewModelBase
     {
         try
         {
-            var subscriptionWindow = new SubscriptionWindow();
+            var serviceProvider = ((App)Application.Current).ServiceProvider;
+            var subscriptionWindow = serviceProvider.GetRequiredService<Views.SubscriptionWindow>();
             subscriptionWindow.Show();
         }
         catch (Exception ex)
@@ -539,7 +540,8 @@ public partial class MainViewModel : ViewModelBase
             _logger.LogInformation("User logged out successfully");
             
             // Close main window and show login
-            var loginWindow = new LoginWindow();
+            var serviceProvider = ((App)Application.Current).ServiceProvider;
+            var loginWindow = serviceProvider.GetRequiredService<Views.LoginWindow>();
             loginWindow.Show();
             
             Application.Current.MainWindow?.Close();

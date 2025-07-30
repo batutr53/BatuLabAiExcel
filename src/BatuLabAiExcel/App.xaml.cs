@@ -50,7 +50,7 @@ public partial class App : Application
         }
     }
 
-    private void Application_Startup(object sender, StartupEventArgs e)
+    private async void Application_Startup(object sender, StartupEventArgs e)
     {
         try
         {
@@ -62,14 +62,20 @@ public partial class App : Application
             StaticServiceProvider = _host.Services;
             Log.Information("DI host built successfully");
 
-            // Start with login window by default
-            Log.Information("Creating LoginWindow...");
-            var loginWindow = ServiceProvider.GetRequiredService<LoginWindow>();
-            Log.Information("LoginWindow created successfully");
+            // Perform startup validation to determine which window to show
+            Log.Information("Performing startup validation...");
+            var startupResult = await PerformStartupValidationAsync();
             
-            MainWindow = loginWindow;
-            Log.Information("Showing LoginWindow...");
-            loginWindow.Show();
+            Window windowToShow = startupResult.WindowToShow switch
+            {
+                WindowType.Main => ServiceProvider.GetRequiredService<MainWindow>(),
+                WindowType.Subscription => ServiceProvider.GetRequiredService<Views.SubscriptionWindow>(),
+                WindowType.Login or _ => ServiceProvider.GetRequiredService<Views.LoginWindow>()
+            };
+            
+            Log.Information("Showing {WindowType} window...", startupResult.WindowToShow);
+            MainWindow = windowToShow;
+            windowToShow.Show();
             Log.Information("Application startup completed successfully");
         }
         catch (Exception ex)
@@ -111,6 +117,9 @@ public partial class App : Application
         }
     }
 
+    /// <summary>
+    /// Perform startup validation to determine which window to show
+    /// </summary>
     private async Task<StartupValidationResult> PerformStartupValidationAsync()
     {
         try
@@ -125,25 +134,37 @@ public partial class App : Application
             if (currentUser == null)
             {
                 Log.Information("No authenticated user found - showing login window");
-                return new StartupValidationResult { ShowLogin = true };
+                return new StartupValidationResult { WindowToShow = WindowType.Login };
             }
             
-            // For now, since license validation is complex with Web API, show main window
-            // In production, this would validate license through Web API
-            Log.Information("User authenticated - showing main window");
-            return new StartupValidationResult { ShowMain = true };
+            // Validate license
+            var licenseValidation = await licenseService.ValidateLicenseAsync(currentUser.Id);
+            
+            if (!licenseValidation.IsValid)
+            {
+                Log.Information("User has invalid/expired license - showing subscription window");
+                return new StartupValidationResult { WindowToShow = WindowType.Subscription };
+            }
+            
+            Log.Information("User authenticated with valid license - showing main window");
+            return new StartupValidationResult { WindowToShow = WindowType.Main };
         }
         catch (Exception ex)
         {
             Log.Error(ex, "Error during startup validation - defaulting to login window");
-            return new StartupValidationResult { ShowLogin = true };
+            return new StartupValidationResult { WindowToShow = WindowType.Login };
         }
     }
 
     private class StartupValidationResult
     {
-        public bool ShowLogin { get; set; }
-        public bool ShowMain { get; set; }
-        public bool ShowSubscription { get; set; }
+        public WindowType WindowToShow { get; set; } = WindowType.Login;
+    }
+
+    private enum WindowType
+    {
+        Login,
+        Main,
+        Subscription
     }
 }

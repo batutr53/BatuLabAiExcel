@@ -72,7 +72,9 @@ public class AiServiceFactory : IAiServiceFactory
     private IAiService CreateDesktopService<T>() where T : class, IDesktopAutomationService
     {
         var desktopService = _serviceProvider.GetRequiredService<T>();
-        return new DesktopAutomationAiService(desktopService, 
-            _serviceProvider.GetRequiredService<ILogger<DesktopAutomationAiService>>());
+        var mcpClient = _serviceProvider.GetRequiredService<IMcpClient>();
+        var logger = _serviceProvider.GetRequiredService<ILogger<DesktopAutomationAiService>>();
+        
+        return new DesktopAutomationAiService(desktopService, mcpClient, logger);
     }
 }

@@ -21,4 +21,18 @@ public abstract partial class ViewModelBase : ObservableObject
         IsBusy = busy;
         StatusMessage = message ?? string.Empty;
     }
+
+    /// <summary>
+    /// Reset the view model to its initial state
+    /// </summary>
+    protected virtual void Reset()
+    {
+        IsBusy = false;
+        StatusMessage = string.Empty;
+    }
+
+    /// <summary>
+    /// Validate if the view model is in a valid state
+    /// </summary>
+    protected virtual bool IsValid => true;
 }

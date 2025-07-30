@@ -17,6 +17,7 @@ public class AppConfiguration
     public EmailSettings Email { get; set; } = new();
     public StripeSettings Stripe { get; set; } = new();
     public WebApiSettings WebApi { get; set; } = new();
+    public DesktopAutomationSettings DesktopAutomation { get; set; } = new();
 
     public class ClaudeSettings
     {

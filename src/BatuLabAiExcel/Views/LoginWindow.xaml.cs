@@ -61,7 +61,8 @@ public partial class LoginWindow : Window
 
     private void RegisterButton_Click(object sender, RoutedEventArgs e)
     {
-        var registerWindow = new RegisterWindow();
+        var serviceProvider = ((App)Application.Current).ServiceProvider;
+        var registerWindow = serviceProvider.GetRequiredService<RegisterWindow>();
         registerWindow.Show();
         Close();
     }

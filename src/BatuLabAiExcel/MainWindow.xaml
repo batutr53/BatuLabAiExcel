@@ -24,6 +24,7 @@
         <local:InverseBooleanConverter x:Key="InverseBoolConverter"/>
         <local:BoolToBackgroundConverter x:Key="BoolToBackgroundConverter"/>
         <local:BoolToForegroundConverter x:Key="BoolToForegroundConverter"/>
+        <local:MessageAlignmentConverter x:Key="MessageAlignmentConverter"/>
 
         <!-- Dark Night Theme Color Palette -->
         <SolidColorBrush x:Key="PrimaryBrush" Color="#8B5CF6"/>
@@ -557,7 +558,7 @@
                                                 Background="{Binding IsUser, Converter={StaticResource BoolToBackgroundConverter}}"
                                                 CornerRadius="12"
                                                 Padding="16,12"
-                                                HorizontalAlignment="{Binding IsUser, Converter={x:Static local:MessageAlignmentConverter.Instance}}"
+                                                HorizontalAlignment="{Binding IsUser, Converter={StaticResource MessageAlignmentConverter}}"
                                                 MaxWidth="400"
                                                 MouseRightButtonUp="MessageBorder_RightClick"
                                                 Tag="{Binding}">
