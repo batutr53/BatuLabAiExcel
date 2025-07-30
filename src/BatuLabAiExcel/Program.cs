@@ -47,6 +47,7 @@ public static class Program
                 services.Configure<AppConfiguration.GeminiSettings>(context.Configuration.GetSection("Gemini"));
                 services.Configure<AppConfiguration.GroqSettings>(context.Configuration.GetSection("Groq"));
                 services.Configure<AppConfiguration.ClaudeCliSettings>(context.Configuration.GetSection("ClaudeCli"));
+                services.Configure<AppConfiguration.GeminiCliSettings>(context.Configuration.GetSection("GeminiCli"));
                 services.Configure<AppConfiguration.AiProviderSettings>(context.Configuration.GetSection("AiProvider"));
                 services.Configure<AppConfiguration.McpSettings>(context.Configuration.GetSection("Mcp"));
                 services.Configure<AppConfiguration.DesktopAutomationSettings>(context.Configuration.GetSection("DesktopAutomation"));
@@ -72,6 +73,7 @@ public static class Program
                 services.AddScoped<IGeminiService, GeminiService>();
                 services.AddScoped<IGroqService, GroqService>();
                 services.AddSingleton<ClaudeCliService>();
+                services.AddSingleton<GeminiCliService>();
                 
                 // AI Provider Factory
                 services.AddSingleton<IAiServiceFactory, AiServiceFactory>();

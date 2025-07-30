@@ -8,6 +8,8 @@ using System.Windows.Data;
 using Microsoft.Extensions.DependencyInjection;
 using BatuLabAiExcel.ViewModels;
 using BatuLabAiExcel.Models;
+using System.Collections.Specialized;
+using System.Windows.Media;
 
 namespace BatuLabAiExcel;
 
@@ -33,13 +35,71 @@ public partial class MainWindow : Window
         if (e.NewValue is MainViewModel viewModel)
         {
             viewModel.RequestScrollToBottom += () => Dispatcher.Invoke(ScrollToBottom);
+            
+            // Also listen to Messages collection changes for auto-scroll
+            viewModel.Messages.CollectionChanged += (s, args) =>
+            {
+                if (args.Action == System.Collections.Specialized.NotifyCollectionChangedAction.Add)
+                {
+                    Dispatcher.BeginInvoke(ScrollToBottom, System.Windows.Threading.DispatcherPriority.Background);
+                }
+            };
+            
             InputTextBox.Focus();
         }
     }
 
     private void ScrollToBottom()
     {
-        ChatScrollViewer.ScrollToBottom();
+        if (ChatListBox.Items.Count > 0)
+        {
+            // Force layout update first
+            ChatListBox.UpdateLayout();
+            
+            // Scroll to last item
+            var lastItem = ChatListBox.Items[ChatListBox.Items.Count - 1];
+            ChatListBox.ScrollIntoView(lastItem);
+            
+            // Get the ScrollViewer inside ListBox for manual scroll
+            var scrollViewer = GetScrollViewer(ChatListBox);
+            if (scrollViewer != null)
+            {
+                scrollViewer.ScrollToBottom();
+                
+                // Delayed scroll to ensure content is fully loaded
+                Dispatcher.BeginInvoke(new Action(() =>
+                {
+                    scrollViewer.UpdateLayout();
+                    scrollViewer.ScrollToVerticalOffset(scrollViewer.ScrollableHeight);
+                }), System.Windows.Threading.DispatcherPriority.ContextIdle);
+                
+                // Final attempt with more delay
+                Task.Run(async () =>
+                {
+                    await Task.Delay(100);
+                    Dispatcher.Invoke(() =>
+                    {
+                        scrollViewer.ScrollToBottom();
+                        scrollViewer.ScrollToVerticalOffset(scrollViewer.ScrollableHeight);
+                    });
+                });
+            }
+        }
+    }
+    
+    private ScrollViewer? GetScrollViewer(DependencyObject o)
+    {
+        if (o is ScrollViewer scrollViewer)
+            return scrollViewer;
+
+        for (int i = 0; i < VisualTreeHelper.GetChildrenCount(o); i++)
+        {
+            var child = VisualTreeHelper.GetChild(o, i);
+            var result = GetScrollViewer(child);
+            if (result != null)
+                return result;
+        }
+        return null;
     }
 
     protected override void OnSourceInitialized(EventArgs e)

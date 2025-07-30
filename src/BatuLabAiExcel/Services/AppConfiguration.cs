@@ -10,6 +10,8 @@ public class AppConfiguration
     public GroqSettings Groq { get; set; } = new();
     public AiProviderSettings AiProvider { get; set; } = new();
     public McpSettings Mcp { get; set; } = new();
+    public ClaudeCliSettings ClaudeCli { get; set; } = new();
+    public GeminiCliSettings GeminiCli { get; set; } = new();
     public LoggingSettings Logging { get; set; } = new();
     public ApplicationSettings Application { get; set; } = new();
     public EmailSettings Email { get; set; } = new();
@@ -102,7 +104,7 @@ public class AppConfiguration
         
         public bool IsValidProvider(string provider)
         {
-            return provider?.ToLowerInvariant() is "claude" or "gemini" or "groq" or "claude cli" or "claude desktop" or "chatgpt desktop";
+            return provider?.ToLowerInvariant() is "claude" or "gemini" or "groq" or "claude cli" or "gemini cli" or "claude desktop" or "chatgpt desktop";
         }
         
         public string GetValidProvider(string? provider = null)
@@ -203,6 +205,18 @@ public class AppConfiguration
         public bool AutoInstall { get; set; } = true;
         public string InstallCommand { get; set; } = "npm install -g @anthropic-ai/claude-code";
         public string ExtraArgs { get; set; } = "--no-confirm --json-output";
+    }
+
+    public class GeminiCliSettings
+    {
+        public bool Enabled { get; set; } = true;
+        public string ExecutablePath { get; set; } = "gemini";
+        public string WorkingDirectory { get; set; } = "./excel_files";
+        public int TimeoutSeconds { get; set; } = 120;
+        public string McpConfigPath { get; set; } = "./mcp-config-gemini.json";
+        public bool AutoInstall { get; set; } = true;
+        public string InstallCommand { get; set; } = "npm install -g @google/gemini-cli";
+        public string ExtraArgs { get; set; } = "";
     }
 
     public class EmailSettings

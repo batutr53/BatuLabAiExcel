@@ -9,18 +9,18 @@ using BatuLabAiExcel.Models;
 namespace BatuLabAiExcel.Services;
 
 /// <summary>
-/// Service for interacting with Claude CLI
+/// Service for interacting with Gemini CLI
 /// </summary>
-public class ClaudeCliService : IAiService
+public class GeminiCliService : IAiService
 {
-    private readonly AppConfiguration.ClaudeCliSettings _settings;
-    private readonly ILogger<ClaudeCliService> _logger;
+    private readonly AppConfiguration.GeminiCliSettings _settings;
+    private readonly ILogger<GeminiCliService> _logger;
 
-    public string ProviderName => "Claude CLI";
+    public string ProviderName => "Gemini CLI";
 
-    public ClaudeCliService(
-        IOptions<AppConfiguration.ClaudeCliSettings> settings,
-        ILogger<ClaudeCliService> logger)
+    public GeminiCliService(
+        IOptions<AppConfiguration.GeminiCliSettings> settings,
+        ILogger<GeminiCliService> logger)
     {
         _settings = settings.Value;
         _logger = logger;
@@ -35,70 +35,66 @@ public class ClaudeCliService : IAiService
         {
             if (!_settings.Enabled)
             {
-                return Result<AiResponse>.Failure("Claude CLI is disabled in configuration");
+                return Result<AiResponse>.Failure("Gemini CLI is disabled in configuration");
             }
 
-            // Ensure Claude CLI is installed
-            if (!await EnsureClaudeCliInstalledAsync())
+            // Ensure Gemini CLI is installed
+            if (!await EnsureGeminiCliInstalledAsync())
             {
-                return Result<AiResponse>.Failure("Claude CLI is not installed and auto-install failed");
+                return Result<AiResponse>.Failure("Gemini CLI is not installed and auto-install failed");
             }
 
             // Create MCP configuration for Excel integration
             await CreateMcpConfigAsync();
 
-            // Build the message for Claude CLI
+            // Build the message for Gemini CLI
             var messageText = BuildMessageFromHistory(messages);
             
-            // Execute Claude CLI command
-            var result = await ExecuteClaudeCliAsync(messageText, cancellationToken);
+            // Execute Gemini CLI command
+            var result = await ExecuteGeminiCliAsync(messageText, cancellationToken);
             
             if (!result.IsSuccess)
             {
                 return Result<AiResponse>.Failure(result.Error!);
             }
 
-            // Parse Claude CLI response
-            var aiResponse = ParseClaudeCliResponse(result.Value!);
+            // Parse Gemini CLI response
+            var aiResponse = ParseGeminiCliResponse(result.Value!);
             return Result<AiResponse>.Success(aiResponse);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error in Claude CLI service");
-            return Result<AiResponse>.Failure($"Claude CLI error: {ex.Message}");
+            _logger.LogError(ex, "Error in Gemini CLI service");
+            return Result<AiResponse>.Failure($"Gemini CLI error: {ex.Message}");
         }
     }
 
-    private async Task<bool> EnsureClaudeCliInstalledAsync()
+    private async Task<bool> EnsureGeminiCliInstalledAsync()
     {
         try
         {
             // Expand environment variables in executable path
             var executablePath = Environment.ExpandEnvironmentVariables(_settings.ExecutablePath);
             
-            // Use PowerShell for better command handling on Windows
-            var checkCommand = "powershell.exe";
-            var checkArgs = $"-Command \"& '{executablePath}' --version\"";
-            
-            // Check if Claude CLI is already installed
+            // Check if Gemini CLI is already installed
             var checkResult = await ExecuteCommandAsync(
-                checkCommand, 
-                checkArgs, 
+                executablePath, 
+                "--version", 
                 TimeSpan.FromSeconds(10));
 
             if (checkResult.IsSuccess)
             {
-                _logger.LogInformation("Claude CLI is already installed: {Version}", checkResult.Value);
+                _logger.LogInformation("Gemini CLI is already installed: {Version}", checkResult.Value);
                 return true;
             }
 
             if (!_settings.AutoInstall)
             {
-                _logger.LogWarning("Claude CLI not found and auto-install is disabled");
+                _logger.LogWarning("Gemini CLI not found and auto-install is disabled");
                 return false;
             }
 
-            _logger.LogInformation("Installing Claude CLI: {Command}", _settings.InstallCommand);
+            _logger.LogInformation("Installing Gemini CLI: {Command}", _settings.InstallCommand);
             
             var installResult = await ExecuteCommandAsync(
                 "cmd", 
@@ -107,16 +103,16 @@ public class ClaudeCliService : IAiService
 
             if (installResult.IsSuccess)
             {
-                _logger.LogInformation("Claude CLI installed successfully");
+                _logger.LogInformation("Gemini CLI installed successfully");
                 return true;
             }
 
-            _logger.LogError("Failed to install Claude CLI: {Error}", installResult.Error);
+            _logger.LogError("Failed to install Gemini CLI: {Error}", installResult.Error);
             return false;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error checking/installing Claude CLI");
+            _logger.LogError(ex, "Error checking/installing Gemini CLI");
             return false;
         }
     }
@@ -211,7 +207,7 @@ public class ClaudeCliService : IAiService
         return builder.ToString();
     }
 
-    private async Task<Result<string>> ExecuteClaudeCliAsync(string message, CancellationToken cancellationToken)
+    private async Task<Result<string>> ExecuteGeminiCliAsync(string message, CancellationToken cancellationToken)
     {
         try
         {
@@ -233,17 +229,17 @@ public class ClaudeCliService : IAiService
             // Normalize the path to avoid issues
             mcpConfigPath = Path.GetFullPath(mcpConfigPath);
             
-            // Use stdin approach to avoid argument length issues and Node.js shell deprecation
-            var finalArgs = $"--print --output-format json --mcp-config \"{mcpConfigPath}\" --dangerously-skip-permissions";
+            // Use Gemini CLI's correct arguments - escape message for command line
+            var escapedMessage = message.Replace("\"", "\\\"");
+            var finalArgs = $"-p \"{escapedMessage}\" --allowed-mcp-server-names excel_mcp_server";
             
-            _logger.LogInformation("Executing Claude CLI with stdin: {Command} {Args}", executablePath, finalArgs);
-            _logger.LogInformation("Claude executable: {Executable}", executablePath);
-            _logger.LogInformation("MCP config path: {McpPath}", mcpConfigPath);
+            _logger.LogInformation("Executing Gemini CLI: {Command} {Args}", executablePath, finalArgs);
+            _logger.LogInformation("Gemini executable: {Executable}", executablePath);
+            _logger.LogInformation("Working directory: {WorkingDir}", workingDir);
 
-            var result = await ExecuteCommandWithStdinAsync(
+            var result = await ExecuteCommandAsync(
                 executablePath,
                 finalArgs,
-                message,
                 TimeSpan.FromSeconds(_settings.TimeoutSeconds),
                 workingDir,
                 cancellationToken);
@@ -252,45 +248,29 @@ public class ClaudeCliService : IAiService
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error executing Claude CLI");
+            _logger.LogError(ex, "Error executing Gemini CLI");
             return Result<string>.Failure($"Execution error: {ex.Message}");
         }
     }
 
-    private AiResponse ParseClaudeCliResponse(string output)
+    private AiResponse ParseGeminiCliResponse(string output)
     {
         try
         {
-            // Claude CLI --output-format json returns a JSON with "result" field
-            var jsonDocument = JsonDocument.Parse(output);
-            if (jsonDocument.RootElement.TryGetProperty("result", out var resultElement))
+            _logger.LogInformation("Raw Gemini CLI output: {Output}", output);
+            
+            // Gemini CLI returns plain text, not JSON - clean and return directly
+            var cleanedOutput = CleanGeminiCliOutput(output);
+            
+            _logger.LogInformation("Cleaned Gemini CLI output: {CleanedOutput}", cleanedOutput);
+            
+            // Only provide default message if we truly got nothing useful
+            if (string.IsNullOrWhiteSpace(cleanedOutput) ||
+                cleanedOutput.Contains("I'm ready to help you analyze your Excel files"))
             {
-                var resultText = resultElement.GetString();
-                if (!string.IsNullOrEmpty(resultText))
-                {
-                    // Fix Turkish character encoding issues
-                    var cleanedText = FixTurkishCharacters(resultText);
-                    
-                    return new AiResponse
-                    {
-                        Id = Guid.NewGuid().ToString(),
-                        Provider = ProviderName,
-                        Content = new List<AiResponseContent>
-                        {
-                            new AiResponseContent
-                            {
-                                Type = "text",
-                                Text = cleanedText
-                            }
-                        },
-                        Usage = null,
-                        FinishReason = "stop"
-                    };
-                }
+                cleanedOutput = "I'm ready to analyze your Excel file. Please ask me what you'd like to know about the data.";
             }
-
-            // If no result field, try to extract text from JSON structure
-            var cleanedOutput = CleanClaudeCliOutput(output);
+            
             return new AiResponse
             {
                 Id = Guid.NewGuid().ToString(),
@@ -309,10 +289,7 @@ public class ClaudeCliService : IAiService
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "Error parsing Claude CLI JSON response, falling back to plain text");
-            
-            // Try to extract just the meaningful content if it's visible JSON
-            var cleanedOutput = ExtractMeaningfulContent(output);
+            _logger.LogWarning(ex, "Error parsing Gemini CLI response");
             
             return new AiResponse
             {
@@ -323,7 +300,7 @@ public class ClaudeCliService : IAiService
                     new AiResponseContent
                     {
                         Type = "text",
-                        Text = cleanedOutput
+                        Text = output.Trim()
                     }
                 },
                 Usage = null,
@@ -332,76 +309,53 @@ public class ClaudeCliService : IAiService
         }
     }
 
-    private string CleanClaudeCliOutput(string output)
+    private string CleanGeminiCliOutput(string output)
     {
-        // Remove Claude CLI specific output formatting and keep only the response
+        // Remove Gemini CLI specific output formatting and keep only the response
         var lines = output.Split('\n', StringSplitOptions.RemoveEmptyEntries);
         var responseLines = new List<string>();
-        bool inResponse = false;
 
         foreach (var line in lines)
         {
             var trimmed = line.Trim();
             
-            // Skip CLI status messages
-            if (trimmed.StartsWith("✓") || trimmed.StartsWith("Loading") || 
-                trimmed.StartsWith("Connecting") || trimmed.StartsWith("$") ||
-                trimmed.Contains("claude >"))
+            // Skip only CLI setup messages, keep everything else
+            if (trimmed.Contains("Loaded cached credentials") ||
+                trimmed.StartsWith("✓") || 
+                trimmed.StartsWith("Loading") || 
+                trimmed.StartsWith("Connecting to MCP server") || 
+                trimmed.StartsWith("$") ||
+                trimmed.Contains("gemini >") ||
+                string.IsNullOrWhiteSpace(trimmed))
             {
                 continue;
             }
 
-            // Start collecting response content
-            if (!inResponse && (trimmed.Length > 10 || responseLines.Count > 0))
+            // Remove "Assistant:" prefix if it exists but keep the content
+            if (trimmed.StartsWith("Assistant:"))
             {
-                inResponse = true;
+                trimmed = trimmed.Substring("Assistant:".Length).Trim();
             }
-
-            if (inResponse)
+            
+            if (!string.IsNullOrEmpty(trimmed))
             {
-                responseLines.Add(line);
+                responseLines.Add(trimmed);
             }
         }
 
-        return string.Join("\n", responseLines).Trim();
-    }
-
-    private string FixTurkishCharacters(string input)
-    {
-        if (string.IsNullOrEmpty(input)) return input;
-
-        // Common Turkish character encoding fixes
-        var fixes = new Dictionary<string, string>
+        var result = string.Join("\n", responseLines).Trim();
+        
+        // If we got nothing meaningful, return the raw output minus obvious CLI noise
+        if (string.IsNullOrEmpty(result))
         {
-            // Unicode escape sequences to proper Turkish characters
-            {"\\u0131", "ı"}, {"\\u0130", "İ"},
-            {"\\u015f", "ş"}, {"\\u015e", "Ş"},
-            {"\\u011f", "ğ"}, {"\\u011e", "Ğ"},
-            {"\\u00fc", "ü"}, {"\\u00dc", "Ü"},
-            {"\\u00f6", "ö"}, {"\\u00d6", "Ö"},
-            {"\\u00e7", "ç"}, {"\\u00c7", "Ç"},
+            var rawLines = output.Split('\n', StringSplitOptions.RemoveEmptyEntries);
+            var cleanLines = rawLines.Where(l => 
+                !string.IsNullOrWhiteSpace(l.Trim()) &&
+                !l.Contains("Loaded cached credentials") &&
+                !l.StartsWith("✓") &&
+                !l.StartsWith("Loading")).ToList();
             
-            // HTML entities
-            {"&ccedil;", "ç"}, {"&Ccedil;", "Ç"},
-            {"&ouml;", "ö"}, {"&Ouml;", "Ö"},
-            {"&uuml;", "ü"}, {"&Uuml;", "Ü"},
-            {"&inodot;", "ı"}, {"&Idot;", "İ"},
-            {"&scaron;", "ş"}, {"&Scaron;", "Ş"},
-            {"&gbreve;", "ğ"}, {"&Gbreve;", "Ğ"},
-            
-            // Common misencoded characters
-            {"Ä±", "ı"}, {"Ä°", "İ"},
-            {"ÅŸ", "ş"}, {"Åž", "Ş"}, 
-            {"Ä£", "ğ"}, {"Ä¢", "Ğ"},
-            {"Ã¼", "ü"}, {"Ãœ", "Ü"},
-            {"Ã¶", "ö"}, {"Ã–", "Ö"},
-            {"Ã§", "ç"}, {"Ã‡", "Ç"}
-        };
-
-        var result = input;
-        foreach (var fix in fixes)
-        {
-            result = result.Replace(fix.Key, fix.Value);
+            return string.Join("\n", cleanLines).Trim();
         }
 
         return result;
@@ -422,21 +376,21 @@ public class ClaudeCliService : IAiService
                     if (endIndex > startIndex)
                     {
                         var resultContent = jsonOutput.Substring(startIndex, endIndex - startIndex);
-                        // Remove escape characters and fix Turkish characters
+                        // Remove escape characters
                         resultContent = resultContent.Replace("\\n", "\n")
                                                    .Replace("\\\"", "\"")
                                                    .Replace("\\\\", "\\");
-                        return FixTurkishCharacters(resultContent);
+                        return resultContent;
                     }
                 }
             }
 
             // Fallback to basic cleaning
-            return CleanClaudeCliOutput(jsonOutput);
+            return CleanGeminiCliOutput(jsonOutput);
         }
         catch
         {
-            return CleanClaudeCliOutput(jsonOutput);
+            return CleanGeminiCliOutput(jsonOutput);
         }
     }
 
@@ -462,7 +416,7 @@ public class ClaudeCliService : IAiService
             process.StartInfo.StandardOutputEncoding = Encoding.UTF8;
             process.StartInfo.StandardErrorEncoding = Encoding.UTF8;
 
-            // Add Node.js environment variable to suppress deprecation warning
+            // Add Node.js environment variable to suppress warnings if needed
             process.StartInfo.EnvironmentVariables["NODE_NO_WARNINGS"] = "1";
             process.StartInfo.EnvironmentVariables["NODE_OPTIONS"] = "--no-deprecation";
 
@@ -530,7 +484,7 @@ public class ClaudeCliService : IAiService
             }
             else
             {
-                var errorMessage = !string.IsNullOrEmpty(errorStr) ? errorStr : "Claude CLI failed with deprecation warning";
+                var errorMessage = !string.IsNullOrEmpty(errorStr) ? errorStr : "Gemini CLI failed";
                 return Result<string>.Failure($"Process failed (exit code {process.ExitCode}): {errorMessage}");
             }
         }
@@ -609,12 +563,5 @@ public class ClaudeCliService : IAiService
         {
             return Result<string>.Failure($"Process execution error: {ex.Message}");
         }
-    }
-
-    private class ClaudeCliJsonResponse
-    {
-        public string? Response { get; set; }
-        public string? Status { get; set; }
-        public Dictionary<string, object>? Metadata { get; set; }
     }
 }

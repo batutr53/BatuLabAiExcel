@@ -77,7 +77,12 @@
       "Bash(where dotnet)",
       "Bash(\"C:\\Program Files\\dotnet\\dotnet.exe\" ef migrations add UpdateModels --project \"D:\\excelaioffice\\src\\BatuLabAiExcel.WebApi\")",
       "Bash(del officeai.db*)",
-      "Bash(ls:*)"
+      "Bash(ls:*)",
+      "Bash(\"C:\\Users\\batuh\\AppData\\Roaming\\npm\\claude.cmd\" --version)",
+      "Bash(C:/Users/batuh/AppData/Roaming/npm/claude.cmd --version)",
+      "WebFetch(domain:www.npmjs.com)",
+      "Bash(where gemini)",
+      "Bash(gemini:*)"
     ],
     "deny": []
   }

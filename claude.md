@@ -133,6 +133,18 @@ dotnet ef database drop -f --project src\BatuLabAiExcel.WebApi
 .\scripts\test_stripe_webhook.ps1
 ```
 
+### Solution Development
+```bash
+# Build entire solution
+dotnet build BatuLabAiExcel.sln
+
+# Clean and rebuild solution  
+dotnet clean BatuLabAiExcel.sln && dotnet build BatuLabAiExcel.sln
+
+# Run tests (if available)
+dotnet test BatuLabAiExcel.sln
+```
+
 ### WebApi Development
 ```bash
 # Run the WebApi project
@@ -275,7 +287,7 @@ Set `ASPNETCORE_ENVIRONMENT=Development` for:
 
 ### Repository Layout
 ```
-E:\batulabaiexcel\
+D:\excelaioffice\
 ├── admin-panel\              # React TypeScript admin dashboard
 │   ├── src\components\       # React components organized by feature
 │   ├── src\services\         # API client and utilities

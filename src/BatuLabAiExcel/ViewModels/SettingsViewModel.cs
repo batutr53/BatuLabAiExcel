@@ -45,7 +45,7 @@ public partial class SettingsViewModel : ViewModelBase
 
     public ObservableCollection<string> AvailableProviders { get; } = new()
     {
-        "Claude", "Gemini", "Groq"
+        "Claude", "Gemini", "Groq", "Claude CLI", "Gemini CLI", "Claude Desktop", "ChatGPT Desktop"
     };
 
     public SettingsViewModel(
